@@ -11,6 +11,12 @@ class Battle {
             this.Characters = [];
             this.sortedCharacters = [];
 
+            this.isJumpFlag = 0;
+            setInterval(() => {
+                this.isJumpFlag++;
+                this.isJumpFlag %= 2;
+            }, 375); // 160 BPM
+
             this.canvas = document.getElementById(`mapCanvas`);
             this.container = document.getElementById(`container`);
 
@@ -188,8 +194,6 @@ class Battle {
                 this.ctx.fill()
                 this.ctx.stroke();
 
-
-
                 // Render portrait frame
                 this.ctx.lineWidth = 1;
                 this.ctx.strokeStyle = `#AAAAAA`;
@@ -319,9 +323,10 @@ class Battle {
                 enemy.drawStartPos.y - 14
             );
 
+            // Draw emeny image
             this.ctx.drawImage(enemy.imageInfo,
                 enemy.drawStartPos.x,
-                enemy.drawStartPos.y,
+                enemy.drawStartPos.y - (10 * ((this.isJumpFlag + idx) % 2)),
                 128, 128);
 
             // Render HP / MP Bar
