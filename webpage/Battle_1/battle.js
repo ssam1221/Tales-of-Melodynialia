@@ -132,11 +132,17 @@ class Battle {
         // console.log(JSON.stringify(this.Characters, null, 4));
     }
 
-    async renderCharactersInUI() {
-        // Show only 4 character
-        for (let idx = 0; idx < 4; idx++) {
+    async renderPlayerCharacterInUI() {
+        const players = [];
+        for (const player of this.Characters) {
+            if (player.type === `Player`) {
+                players.push(player);
+            }
+        }
+
+        for (let idx = 0; idx < players.length; idx++) {
             (() => {
-                const character = this.sortedCharacters[idx];
+                const character = players[idx];
 
                 this.ctx.beginPath();
                 this.ctx.roundRect(
@@ -146,16 +152,8 @@ class Battle {
                     this.UIContainer.height * 0.85,
                     this.UIContainer.borderRadius
                 );
-                if (character.type === `Enemy`) {
-                    this.ctx.strokeStyle = `#FF0000`;
-                } else {
-                    this.ctx.strokeStyle = `#0000FF`;
-                }
-                if (idx === 0) {
-                    this.ctx.lineWidth = this.UIContainer.borderWidth;
-                } else {
-                    this.ctx.lineWidth = this.UIContainer.borderWidth / 2;
-                }
+                this.ctx.strokeStyle = `#CCCCCC`;
+                this.ctx.lineWidth = this.UIContainer.borderWidth / 2;
                 this.ctx.stroke();
 
 
@@ -192,6 +190,20 @@ class Battle {
 
 
 
+                // Render portrait frame
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeStyle = `#AAAAAA`;
+                this.ctx.beginPath();
+                this.ctx.roundRect(
+                    (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                    this.UIContainer.top + 20,
+                    64, 64,
+                    this.UIContainer.borderRadius / 2
+                );
+                this.ctx.fillStyle = `rgba(255, 255, 255, 0.2)`
+                this.ctx.fill()
+                this.ctx.stroke();
+
                 // Render portrait and info
                 this.ctx.fillStyle = `#FFFFFF`
                 this.ctx.drawImage(character.imageInfo,
@@ -218,6 +230,47 @@ class Battle {
         }
     }
 
+    async renderCharacterBattleOrder() {
+        // Show only 4 character
+        for (let idx = 0; idx < 9; idx++) {
+            (() => {
+                const character = this.sortedCharacters[idx];
+
+                // Render portrait and info
+                if (character !== undefined) {
+                    this.ctx.fillStyle = `#FFFFFF`
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(
+                        (this.UIContainer.left + 10) + (67 * idx),
+                        this.UIContainer.top - 60,
+                        48, 48,
+                        this.UIContainer.borderRadius
+                    );
+                    if (character.type === `Enemy`) {
+                        this.ctx.strokeStyle = `#FF0000`;
+                        this.ctx.fillStyle = `rgba(255,0,0,0.5)`;
+                    } else {
+                        this.ctx.strokeStyle = `#0000FF`;
+                        this.ctx.fillStyle = `rgba(0,0,255,0.5)`;
+                    }
+                    this.ctx.fill();
+
+                    this.ctx.drawImage(character.imageInfo,
+                        (this.UIContainer.left + 10) + (67 * idx),
+                        this.UIContainer.top - 60,
+                        48, 48
+                    );
+                    if (idx === 0) {
+                        this.ctx.lineWidth = this.UIContainer.borderWidth;
+                    } else {
+                        this.ctx.lineWidth = this.UIContainer.borderWidth / 2;
+                    }
+                    this.ctx.stroke();
+                }
+            })();
+        }
+    }
+
     drawEnemy() {
         const enemies = [];
         for (const enemy of this.Characters) {
@@ -225,14 +278,100 @@ class Battle {
                 enemies.push(enemy);
             }
         }
-        const drawStartLeftPos = 640 / (enemies.length + 1);
+        const drawPadding = 10; // Left / right padding
+        const drawStartLeftPos = 320 - ((64 + drawPadding / 2) * enemies.length);
+        // console.log(`drawStartLeftPos : ${drawStartLeftPos}`)
+        /**
+         * 가운데 정렬 기준
+         * 1개 : 320 - 64 + padding * 0
+         * 2개 : 320 - 128 + padding * 0.5
+         * 3게 : 320 - 64 - 128 + padding * 1.5
+         * 4개 : 320 - 148 - 128 + padding * 2
+         */
 
         for (let idx = 0; idx < enemies.length; idx++) {
             const enemy = enemies[idx];
+            enemy.drawStartPos = {
+                x: drawStartLeftPos + ((128 + drawPadding) * idx),
+                y: 220
+            }
+            // Render name
+            // Name bar
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeStyle = `transparent`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(
+                enemy.drawStartPos.x + 16,
+                enemy.drawStartPos.y - 29,
+                108, 20,
+                this.UIContainer.borderRadius / 2
+            );
+            this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
+            this.ctx.fill()
+            this.ctx.stroke();
+
+            // Name text
+            this.ctx.fillStyle = `#FFFFFF`
+            this.ctx.font = `14px Arial`;
+            this.ctx.textAlign = `center`;
+            this.ctx.fillText(enemy.name,
+                enemy.drawStartPos.x + 68,
+                enemy.drawStartPos.y - 14
+            );
+
             this.ctx.drawImage(enemy.imageInfo,
-                drawStartLeftPos + ((128 + 32) * idx) - 48,
-                200,
+                enemy.drawStartPos.x,
+                enemy.drawStartPos.y,
                 128, 128);
+
+            // Render HP / MP Bar
+            // HP Bar
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeStyle = `#FFFFFF`;
+            this.ctx.beginPath();
+            this.ctx.roundRect(
+                enemy.drawStartPos.x + 28,
+                enemy.drawStartPos.y + 135,
+                (this.UIContainer.width * 0.15) - 20,
+                20,
+                this.UIContainer.borderRadius / 2
+            );
+            this.ctx.fillStyle = `rgba(255, 0, 0, 0.5)`
+            this.ctx.fill()
+            this.ctx.stroke();
+
+            // MP Bar
+            // this.ctx.lineWidth = 1;
+            // this.ctx.strokeStyle = `#FFFFFF`;
+            // this.ctx.beginPath();
+            // this.ctx.roundRect(
+            //     enemy.drawStartPos.x + 28,
+            //     enemy.drawStartPos.y + 155,
+            //     (this.UIContainer.width * 0.15) - 20,
+            //     20,
+            //     this.UIContainer.borderRadius / 2
+            // );
+            // this.ctx.fillStyle = `rgba(0, 0, 255, 0.5)`
+            // this.ctx.fill()
+            // this.ctx.stroke();
+
+            // Render info
+            this.ctx.fillStyle = `#FFFFFF`
+            this.ctx.font = `14px Arial`;
+            const hpmpText = {
+                HP: `${enemy.HP} / ${enemy.remainHP}`,
+                MP: enemy.type === `Player` ?
+                    `${enemy.MP} / ${enemy.remainMP}` : `?? / ??`,
+            }
+            this.ctx.textAlign = `center`;
+            this.ctx.fillText(hpmpText.HP,
+                enemy.drawStartPos.x + 64,
+                enemy.drawStartPos.y + 150
+            );
+            // this.ctx.fillText(hpmpText.MP,
+            //     enemy.drawStartPos.x + 64,
+            //     enemy.drawStartPos.y + 170
+            // );
         }
     }
 
@@ -251,7 +390,8 @@ class Battle {
                 animateCountForCharacterUIRender = 0;
             }
             this.drawEnemy();
-            this.renderCharactersInUI();
+            this.renderCharacterBattleOrder();
+            this.renderPlayerCharacterInUI();
             // for (const instance of NPCList) {
             // console.log(`Render : `, instance.img)
             // instance.renderFrame();
