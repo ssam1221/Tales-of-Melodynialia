@@ -6,11 +6,21 @@ class Battle {
             this.backgroundImageInstance = new Image();
             this.backgroundImageInstance.src = param.background;
 
+            this.isBattleStart = false;
+            this.isBattleEnd = false;
+            this.isBattleEndTextRendering = false;
+
+            this.fadeFactor = 1;
+            this.fadeSpeed = 0.02;
+
             this.UIContainer = {};
+            this.UIContainerTextLine = 0;
+            this.UIContainerText = ``;
 
             this.Characters = [];
             this.sortedCharacters = [];
 
+            this.animationInterval = 0;
             this.isJumpFlag = 0;
             setInterval(() => {
                 this.isJumpFlag++;
@@ -18,6 +28,8 @@ class Battle {
             }, 375); // 160 BPM
 
             this.canvas = document.getElementById(`mapCanvas`);
+            this.imgContainer = document.getElementById(`render`);
+            // this.canvas = document.createElement(`canvas`);
             this.container = document.getElementById(`container`);
 
             // this.canvas.classList.add(`npc`)
@@ -41,7 +53,7 @@ class Battle {
         this.UIContainer.menu = coMPonents.menu;
     }
 
-    drawMenuSelector(idx) {
+    drawMenuSelectorArrow(idx) {
         const selector = this.canvas.getContext(`2d`);
         const base = {
             left: 465 + this.UIContainer.left,
@@ -58,7 +70,7 @@ class Battle {
         return selector;
     }
 
-    renderUI() {
+    renderUIBox() {
         this.ctx.beginPath();
         this.ctx.roundRect(this.UIContainer.left, this.UIContainer.top,
             this.UIContainer.width, this.UIContainer.height, this.UIContainer.borderRadius);
@@ -72,13 +84,16 @@ class Battle {
 
         this.ctx.fillStyle = this.UIContainer.font.color;
         this.ctx.font = `${this.UIContainer.font.size}px Arial`;
-
+    }
+    renderUIBoxMenu() {
         // Render menu text
         let count = 0;
         const numOfmenu = Object.keys(this.UIContainer.menu).length;
         const rowcol = parseInt(Math.sqrt(numOfmenu))
 
         for (const menuText in this.UIContainer.menu) {
+            this.ctx.fillStyle = `#FFFFFF`
+            this.ctx.font = `${this.UIContainer.font.size}px Arial`;
             this.ctx.textAlign = `start`;
             this.ctx.fillText(menuText,
                 480 + this.UIContainer.left,
@@ -284,6 +299,7 @@ class Battle {
         }
         const drawPadding = 10; // Left / right padding
         const drawStartLeftPos = 320 - ((64 + drawPadding / 2) * enemies.length);
+        const drawStartTopPos = 270;
         // console.log(`drawStartLeftPos : ${drawStartLeftPos}`)
         /**
          * 가운데 정렬 기준
@@ -297,7 +313,7 @@ class Battle {
             const enemy = enemies[idx];
             enemy.drawStartPos = {
                 x: drawStartLeftPos + ((128 + drawPadding) * idx),
-                y: 220
+                y: drawStartTopPos
             }
             // Render name
             // Name bar
@@ -324,9 +340,10 @@ class Battle {
             );
 
             // Draw emeny image
+            const isJump = this.isBattleStart ? 2 : 1;
             this.ctx.drawImage(enemy.imageInfo,
                 enemy.drawStartPos.x,
-                enemy.drawStartPos.y - (10 * ((this.isJumpFlag + idx) % 2)),
+                enemy.drawStartPos.y - (10 * ((this.isJumpFlag + idx) % isJump)),
                 128, 128);
 
             // Render HP / MP Bar
@@ -380,28 +397,197 @@ class Battle {
         }
     }
 
-    async animate() {
+    drawMenuText() {
+        this.renderUIBoxMenu();
+        this.drawMenuSelectorArrow(0); //.drawImage(this.backgroundImageInstance, 0, 0, 640, 640);
+    }
+
+    async renderTextInUI(str) {
+        let textArr;
+
+        async function sleep(timer = 1000) {
+            return new Promise((resolve, reject) => {
+                setTimeout(resolve, timer);
+            })
+        }
+
+        if (typeof str === `string`) {
+            textArr = [str];
+        } else {
+            textArr = [...str];
+        }
+        // for (const text of textArr) {
+        this.ctx.fillStyle = `#FFFFFF`
+        this.ctx.textAlign = `start`;
+        this.ctx.font = `${this.UIContainer.font.size}px Arial`;
+
+        for (let idx = 0; idx < textArr.length; idx++) {
+            const text = textArr[idx];
+            this.ctx.fillText(text,
+                (this.UIContainer.left + 30), // + (((this.UIContainer.width * 0.15) + 10)),
+                this.UIContainer.top + 40 + this.UIContainer.font.size * idx,
+            );
+        }
+        console.log(`this.renderTextInUI : \n`, textArr.join('\n'));
+    }
+
+    renderTextInUIWithTimer(str) {
+
+    }
+
+    renderBattleStartText() {
+        const enemies = [];
+        let text = ``;
+        for (const enemy of this.Characters) {
+            if (enemy.type === `Enemy`) {
+                enemies.push(enemy);
+            }
+        }
+        if (enemies.length === 1) {
+            text = `The ${enemies[0]} is appeared!`
+        } else {
+            text = `Monsters are appeared!`
+        }
+        this.renderTextInUI(text);
+    }
+
+    renderBattleEndText() {
+        return new Promise(async (resolve, reject) => {
+            if (this.isBattleEndTextRendering === false) {
+                this.isBattleEndTextRendering = true;
+
+                const enemies = [];
+                let textArr = [];
+                for (const enemy of this.Characters) {
+                    if (enemy.type === `Enemy`) {
+                        enemies.push(enemy);
+                    }
+                }
+                textArr.push(`You Win!`);
+                textArr.push(`Got 371 EXP!`);
+                this.renderTextInUI(textArr);
+                this.UIContainerText = [...textArr];
+            } else {
+                console.log(this.UIContainerText)
+                // if (Array.isArray(this.UIContainerText)) {
+                //     this.UIContainerText = this.UIContainerText.join('\n');
+                // }
+                this.renderTextInUI(this.UIContainerText);
+            }
+            resolve();
+        });
+    }
+
+    async startRenderBasicUIs() {
         let animateCountForCharacterUIRender = 0;
         this.sortCharacters();
-        setInterval(async () => {
-            this.ctx.clearRect(0, 0, 640, 640);
+        this.ctx.clearRect(0, 0, 640, 640);
 
-            // Render menu arrow
-            this.ctx.drawImage(this.backgroundImageInstance, 0, 0, 640, 640);
-            this.renderUI();
-            this.drawMenuSelector(0); //.drawImage(this.backgroundImageInstance, 0, 0, 640, 640);
-            if (animateCountForCharacterUIRender++ > 10) {
-                this.sortCharacters();
-                animateCountForCharacterUIRender = 0;
+        // Render menu arrow
+        this.ctx.drawImage(this.backgroundImageInstance, 0, 0, 640, 640);
+        this.renderUIBox();
+        if (animateCountForCharacterUIRender++ > 10) {
+            this.sortCharacters();
+            animateCountForCharacterUIRender = 0;
+        }
+        this.drawEnemy();
+        // this.renderCharacterBattleOrder();
+        // this.renderPlayerCharacterInUI();
+        // for (const instance of NPCList) {
+        // console.log(`Render : `, instance.img)
+        // instance.renderFrame();
+        // }
+    }
+
+    fadein() {
+        if (this.fadeFactor > 0) {
+            this.fadeFactor -= this.fadeSpeed;
+        }
+        this.ctx.fillStyle = `rgba(0, 0, 0, ${this.fadeFactor})`;
+        this.ctx.fillRect(0, 0, 640, 640);
+    }
+
+    fadeout() {
+        if (this.fadeFactor < 1) {
+            this.fadeFactor += this.fadeSpeed;
+        }
+        this.ctx.fillStyle = `rgba(0, 0, 0, ${this.fadeFactor})`;
+        console.log(`rgba(0, 0, 0, ${this.fadeFactor})`);
+        this.ctx.fillRect(0, 0, 640, 640);
+    }
+
+    // https://img.ly/blog/how-to-pixelate-an-image-in-javascript/
+    async pixelate(pixelationFactor) {
+        const originalImageData = this.ctx.getImageData(0, 0, 640, 640).data;
+        if (pixelationFactor !== 0) {
+            for (let y = 0; y < 640; y += pixelationFactor) {
+                for (let x = 0; x < 640; x += pixelationFactor) {
+                    // extracting the position of the sample pixel
+                    const pixelIndexPosition = (x + y * 640) * 4;
+                    // drawing a square replacing the current pixels
+                    this.ctx.fillStyle = `rgba( ${originalImageData[pixelIndexPosition]}, ${originalImageData[pixelIndexPosition + 1]},${originalImageData[pixelIndexPosition + 2]}, ${originalImageData[pixelIndexPosition + 3]} )`;
+                    this.ctx.fillRect(x, y, pixelationFactor, pixelationFactor);
+                }
             }
-            this.drawEnemy();
-            this.renderCharacterBattleOrder();
+        }
+    }
+
+
+    async animate() {
+        this.animationInterval = setInterval(async () => {
+            this.startRenderBasicUIs();
+            this.drawMenuText();
             this.renderPlayerCharacterInUI();
-            // for (const instance of NPCList) {
-            // console.log(`Render : `, instance.img)
-            // instance.renderFrame();
-            // }
         }, 1000 / FPS);
     }
 
+    async start() {
+        let pixelateCount = 48;
+
+        const startPixelate = async () => {
+            this.startRenderBasicUIs();
+            if (pixelateCount > 5) {
+                this.renderBattleStartText();
+                this.pixelate(pixelateCount--);
+                this.fadein();
+                window.requestAnimationFrame(startPixelate);
+            } else {
+                this.isBattleStart = true;
+                this.renderBattleStartText();
+                setTimeout(() => {
+                    this.animate();
+                }, 1000);
+            }
+        }
+        window.requestAnimationFrame(startPixelate);
+    }
+
+    async end() {
+        const pixelateCount = 48;
+        let remainPixelateCount = 0;
+
+        const startPixelate = async () => {
+            this.startRenderBasicUIs();
+            await this.renderBattleEndText();
+            if (remainPixelateCount < pixelateCount) {
+                if (remainPixelateCount !== 0) {
+                    this.fadeout();
+                }
+                this.pixelate(remainPixelateCount++);
+                
+                window.requestAnimationFrame(startPixelate);
+                console.log(`ENDING`)
+            } else {
+                this.isBattleEnd = true;
+                clearInterval(this.animationInterval);
+                this.ctx.clearRect(0, 0, 640, 640);
+                console.log(`END`)
+                // setTimeout(() => {
+                // this.animate();
+                // }, 1000);
+            }
+        }
+        await this.renderBattleEndText();
+        window.requestAnimationFrame(startPixelate);
+    }
 }

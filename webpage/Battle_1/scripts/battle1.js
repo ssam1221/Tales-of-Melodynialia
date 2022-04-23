@@ -40,30 +40,36 @@
         MP: 102
     });
     await battleInstance.addEnemy({
-        name: `Slime 1`,
+        name: `Crotchetlime`,
         speed: 55,
         icon: `sprites/enemy1.png`,
         HP: 56,
     });
     await battleInstance.addEnemy({
-        name: `Slime 2`,
+        name: `Quaverlime`,
         speed: 44,
         icon: `sprites/enemy2.png`,
         HP: 53,
     });
     await battleInstance.addEnemy({
-        name: `Slime 3`,
+        name: `TwinQuaverlime`,
         speed: 33,
         icon: `sprites/enemy3.png`,
         HP: 62,
     });
     await battleInstance.addEnemy({
-        name: `Slime 4`,
+        name: `SemiQuaverlime`,
         speed: 50,
         icon: `sprites/enemy4.png`,
         HP: 59,
     });
 
-    battleInstance.animate();
+    setTimeout(() => {
+        battleInstance.start();
+        setTimeout(battleInstance.end.bind(battleInstance), 3000);
 
+    }, 3000);
+    // battleInstance.start();
+
+    // setTimeout(battleInstance.end.bind(battleInstance), 3000);
 })();
