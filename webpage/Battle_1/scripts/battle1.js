@@ -24,52 +24,79 @@
             Leave: {},
         }
     });
+    await (async () => {
+        await battleInstance.addAttackEffect({
+            name: `FlameSlash`,
+            type: `Normal`,
+            image: `sprites/attack/NicePng_slash-effect-png_1824697.png`,
+            row: 3,
+            col: 5
+        });
+        await battleInstance.addAttackEffect({
+            name: `Sword Slash`,
+            type: `Normal`,
+            image: `sprites/attack/slash.png`,
+            row: 5,
+            col: 5
+        });
+    })();
+    await (async () => {
+        await battleInstance.addCharacter({
+            name: `Clef`,
+            speed: 60,
+            icon: `sprites/player1.png`,
+            HP: 138,
+            MP: 25
+        });
+        await battleInstance.addCharacter({
+            name: `Lirico`,
+            speed: 40,
+            icon: `sprites/player2.png`,
+            HP: 97,
+            MP: 102
+        });
+        await battleInstance.addEnemy({
+            name: `Crotchetlime`,
+            description: `Monster 1`,
+            speed: 55,
+            icon: `sprites/enemy1.png`,
+            HP: 56,
+        });
+        await battleInstance.addEnemy({
+            name: `Quaverlime`,
+            description: `Monster 2`,
+            speed: 44,
+            icon: `sprites/enemy2.png`,
+            HP: 53,
+        });
+        await battleInstance.addEnemy({
+            name: `TwinQuaverlime`,
+            description: `Monster 3`,
+            speed: 33,
+            icon: `sprites/enemy3.png`,
+            HP: 62,
+        });
+        await battleInstance.addEnemy({
+            name: `SemiQuaverlime`,
+            description: `Monster 4`,
+            speed: 50,
+            icon: `sprites/enemy4.png`,
+            HP: 59,
+        });
+    })();
 
-    await battleInstance.addCharacter({
-        name: `Player 1`,
-        speed: 60,
-        icon: `sprites/player1.png`,
-        HP: 138,
-        MP: 25
+    battleInstance.addBattleScenario({
+        action: `Attack`,
+        attackName: `Sword Slash`,
+        from: `Clef`,
+        to: 3,
+        damage: 30
     });
-    await battleInstance.addCharacter({
-        name: `Player 2`,
-        speed: 40,
-        icon: `sprites/player2.png`,
-        HP: 97,
-        MP: 102
-    });
-    await battleInstance.addEnemy({
-        name: `Crotchetlime`,
-        speed: 55,
-        icon: `sprites/enemy1.png`,
-        HP: 56,
-    });
-    await battleInstance.addEnemy({
-        name: `Quaverlime`,
-        speed: 44,
-        icon: `sprites/enemy2.png`,
-        HP: 53,
-    });
-    await battleInstance.addEnemy({
-        name: `TwinQuaverlime`,
-        speed: 33,
-        icon: `sprites/enemy3.png`,
-        HP: 62,
-    });
-    await battleInstance.addEnemy({
-        name: `SemiQuaverlime`,
-        speed: 50,
-        icon: `sprites/enemy4.png`,
-        HP: 59,
-    });
-
-    setTimeout(() => {
-        battleInstance.start();
-        setTimeout(battleInstance.end.bind(battleInstance), 3000);
-
-    }, 3000);
+    // setTimeout(() => {
     // battleInstance.start();
+    // setTimeout(battleInstance.end.bind(battleInstance), 3000);
+    // }, 3000);
+    battleInstance.start();
 
     // setTimeout(battleInstance.end.bind(battleInstance), 3000);
 })();
