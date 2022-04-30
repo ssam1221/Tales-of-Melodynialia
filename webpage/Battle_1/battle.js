@@ -1,14 +1,42 @@
-const FPS = 10;
+const FPS = 60;
+
+const ARROW_MOVE_SPEED = 500;
 
 const UI_MODE = {
     TEXT: `TEXT`,
     BATTLE_MENU: `BATTLE_MENU`,
     ATTACK: `ATTACK`,
+    MAGIC_SELECT: `MAGIC_SELECT`,
     ENEMY_SELECT: `ENEMY_SELECT`,
     ATTACKING: `ATTACKING`,
     ATTACK_RESULT: `ATTACK_RESULT`,
+    ATTACK_BY_ENEMY: `ATTACK_BY_ENEMY`,
     ITEM: `ITEM`,
     MAGIC: `MAGIC`
+}
+
+let timerInterval = 0;
+let startTime = 0;
+
+async function sleep(timer = 1000) {
+    return new Promise((resolve, reject) => {
+        setTimeout(resolve, timer);
+    })
+}
+
+function startTimer() {
+    startTime = new Date();
+    timerInterval = setInterval(() => {
+        const diff = new Date(new Date().getTime() - startTime.getTime());
+        document.getElementById(`timer`).innerHTML = `${diff.getMinutes().toString().padStart(2,'0')}:` +
+            `${diff.getSeconds().toString().padStart(2,'0')}:` +
+            `${diff.getMilliseconds().toString().padStart(3,'0')}`;
+    }, 10);
+}
+
+function endTimer() {
+    console.log(`All Battle scenario end.`);
+    clearInterval(timerInterval);
 }
 
 class Battle {
@@ -34,6 +62,7 @@ class Battle {
             this.UIMode = UI_MODE.TEXT;
 
             this.renderingTextInUI = ``;
+            this.selectedMagic = 0;
 
             this.AttackEffect = {};
             this.currentAttackTarget = 0;
@@ -43,8 +72,15 @@ class Battle {
             this.Characters = [];
             this.sortedCharacters = [];
 
+            this.MagicList = {};
+            this.MagicListArray = [];
+
+            this.PlayerList = [];
             this.enemiesList = [];
             this.attackingBlinkEffectCount = 0;
+
+            this.ScreenShakedEffectDistanceDefault = 30;
+            this.screenShakedEffectDistance = 0;
 
             this.itemList = [];
             this.selectedMenu = 0;
@@ -94,29 +130,38 @@ class Battle {
             const attackInfo = info;
             attackInfo.imageInfo = new Image();
             attackInfo.imageInfo.src = info.image;
+
             attackInfo.imageInfo.onload = () => {
                 attackInfo.spriteSize = {
                     width: attackInfo.imageInfo.naturalWidth / info.col,
                     height: attackInfo.imageInfo.naturalHeight / info.row
                 }
                 this.AttackEffect[info.name] = attackInfo;
+
+                if (info.type === `Magic`) {
+                    this.MagicList[info.name] = attackInfo;
+                }
+
                 resolve();
             }
         });
     }
 
-    async attackEnemy(attackScenario) {
+    async _reduceRemainHP({
+        enemy,
+        scenario,
+        attackType
+    }) {
         return new Promise(async (resolve, reject) => {
-            const enemy = this.findEnemyInfoByIndex(attackScenario.to);
-            const enemyName = enemy.name;
-            this.renderingTextInUI = `${attackScenario.from} attacks ${enemyName}!`;
-
-            this.attackRenderTimestamp = 0;
-            this.currentAttackName = attackScenario.attackName;
-            this.currentAttackTarget = attackScenario.to;
-            const attackInfo = this.AttackEffect[attackScenario.attackName];
-
+            let attackInfo;
+            if (attackType === `Attack`) {
+                attackInfo = this.AttackEffect[scenario.attackName];
+            } else if (attackType === `Magic`) {
+                attackInfo = this.MagicList[scenario.spell];
+            }
             const timestampMax = attackInfo.col * attackInfo.row;
+
+            // Do animation effect
             while (this.attackRenderTimestamp < timestampMax) {
                 await (() => {
                     return new Promise((_resolve, _reject) => {
@@ -127,29 +172,74 @@ class Battle {
                     });
                 })();
             }
+            await sleep(500);
 
             if (attackInfo.damage === 0) {
-                this.renderingTextInUI = `${enemyName} avoid!`;
+                this.renderingTextInUI = `${enemy.name} avoid!`;
             } else {
-                this.renderingTextInUI = `${enemyName} got ${attackScenario.damage} damage(s)!`;
+                this.renderingTextInUI = `${enemy.name} got ${scenario.damage} damage(s)!`;
             }
 
-            let remainHPDiff = attackScenario.damage;
+            let remainHPDiff = scenario.damage;
             while (remainHPDiff-- > 0) {
                 enemy.isAttacking = true;
                 await (() => {
                     return new Promise((_resolve, _reject) => {
                         setTimeout(() => {
                             enemy.remainHP--;
+                            if (enemy.remainHP === 0) {
+                                remainHPDiff = 0;
+                                enemy.status = `Deading`;
+                            }
                             _resolve();
-                        }, 1000 / FPS);
+                        }, 3 * 1000 / FPS);
                     });
                 })();
             }
+
+            if (enemy.status === `Deading`) {
+                while (enemy.opacity > 0) {
+                    await (() => {
+                        return new Promise((_resolve, _reject) => {
+                            setTimeout(() => {
+                                enemy.opacity -= 0.05;
+                                _resolve();
+                            }, 3 * 1000 / FPS);
+                        });
+                    })();
+                }
+                this.renderingTextInUI = `${enemy.name} fainted!`;
+                enemy.status = `Dead`;
+            }
+
             enemy.isAttacking = false;
+            resolve();
+        });
+    }
+
+    async attackEnemy(attackScenario) {
+        return new Promise(async (resolve, reject) => {
+            const enemy = this.findEnemyInfoByIndex(attackScenario.to);
+            const enemyName = enemy.name;
+
+            this.attackRenderTimestamp = 0;
+            this.currentAttackName = attackScenario.attackName;
+            this.currentAttackTarget = attackScenario.to;
+            const attackInfo = this.AttackEffect[attackScenario.attackName];
+
+            if (attackInfo.type === `Normal`) {
+                this.renderingTextInUI = `${attackScenario.from} attacks ${enemyName}!`;
+            }
+
+            await this._reduceRemainHP({
+                enemy,
+                scenario: attackScenario,
+                attackType: `Attack`
+            });
 
             console.log(`attackEnemy done`);
             setTimeout(() => {
+                this.renderingTextInUI = ``;
                 this.attackRenderTimestamp = 0;
                 resolve();
             }, 1000);
@@ -162,13 +252,11 @@ class Battle {
             if (this.UIMode === UI_MODE.ATTACKING) {
                 // console.log(`renderAttackEnemy start`)
                 const enemyInfo = this.findEnemyInfoByIndex(targetIndex);
-                const selector = this.canvas.getContext(`2d`);
                 const base = {
                     // TODO  : Change static value to calc value
                     left: enemyInfo.drawStartPos.x + (4 * (targetIndex)),
                     top: enemyInfo.drawStartPos.y
                 }
-
                 const attackInfo = this.AttackEffect[attackName];
                 // console.log(this.attackRenderTimestamp)
                 const spriteRow = parseInt(this.attackRenderTimestamp / attackInfo.col);
@@ -177,14 +265,195 @@ class Battle {
                 // console.log(`row / col : `, spriteRow, spriteCol);
                 // this.ctx.drawImage(attackInfo.imageInfo, 0, 0, attackInfo.spriteSize.width, attackInfo.spriteSize.height,
                 //     base.x, base.y, attackInfo.spriteSize.width, attackInfo.spriteSize.height);
+
+                const spriteSize = {
+                    width: 128,
+                    height: 128
+                }
+
+                if (`renderStartPosition` in attackInfo) {
+                    base.left += attackInfo.renderStartPosition.x;
+                    base.top = attackInfo.renderStartPosition.y;
+                    spriteSize.width = attackInfo.imageInfo.naturalWidth / attackInfo.col;
+                    spriteSize.height = attackInfo.imageInfo.naturalHeight / attackInfo.row;
+                }
                 this.ctx.drawImage(attackInfo.imageInfo,
                     attackInfo.spriteSize.width * spriteCol,
                     attackInfo.spriteSize.height * spriteRow,
-                    attackInfo.spriteSize.width, attackInfo.spriteSize.height,
-                    base.left, base.top, 128, 128);
+                    spriteSize.width, spriteSize.height,
+                    base.left, base.top, spriteSize.width, spriteSize.height);
+                this.renderTextInUI();
                 setTimeout(resolve, 3000);
             }
         });
+    }
+
+    renderSelectMagicInUI() {
+
+        this.ctx.fillStyle = `#FFFFFF`
+        this.ctx.textAlign = `start`;
+        this.ctx.font = `${this.UIContainer.font.size}px Arial`;
+
+        // Draw arrow
+
+        // const selector = this.canvas.getContext(`2d`);
+        // const base = {
+        //     left: 465 + this.UIContainer.left,
+        //     top: 2 + this.UIContainer.top + ((this.UIContainer.height / 5) * (1 + idx))
+        // }
+        // selector.save();
+        // selector.beginPath();
+        // selector.moveTo(base.left, base.top);
+        // selector.lineTo(base.left - 10, base.top + 10);
+        // selector.lineTo(base.left - 10, base.top - 10);
+        // selector.fill();
+        // selector.rotate(45 * Math.PI / 180);
+        // selector.restore();
+        // return selector;
+
+        const base = {
+            left: 40 + this.UIContainer.left,
+            top: 2 + this.UIContainer.top
+        }
+        const diff = this.selectedMagic * this.UIContainer.height / 5
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.moveTo(base.left, diff + base.top + (this.UIContainer.height / 5));
+        this.ctx.lineTo(base.left - 10, diff + base.top + (this.UIContainer.height / 5) + 10);
+        this.ctx.lineTo(base.left - 10, diff + base.top + (this.UIContainer.height / 5) - 10);
+        this.ctx.fill();
+        this.ctx.rotate(45 * Math.PI / 180);
+        this.ctx.restore();
+
+        // List up magic
+        for (let idx = 0; idx < this.MagicListArray.length; idx++) {
+            // console.log(this.MagicListArray)
+            const magic = this.MagicListArray[idx];
+
+            // Magic name
+            this.ctx.fillText(magic.name,
+                base.left + 10,
+                40 + this.UIContainer.top + (this.UIContainer.height / 5 * idx)
+            );
+
+            // Magic description
+            // this.ctx.fillText(magic.description,
+            //     base.left + 60,
+            //     40 + this.UIContainer.top + (this.UIContainer.height / 5 * idx)
+            // );
+        }
+    }
+
+    async selectMagic(magicScenario) {
+        const targetIndex = this.MagicListArray.findIndex(magic => {
+            console.log(`magic ::: `, magic);
+            return magic.name === magicScenario.spell;
+        });
+        return new Promise(async (resolve, reject) => {
+            const magicInfo = this.MagicList[magicScenario];
+            let diff = 0;
+            if (this.selectedMagic < targetIndex) {
+                diff = 1;
+            } else if (this.selectedMagic > targetIndex) {
+                diff = -1;
+            } else {
+                return setTimeout(resolve, 1000);
+            }
+
+            while (this.selectedMagic !== targetIndex) {
+                // console.log(` while this.selectedEnemy : `, this.selectedEnemy)
+                await (() => {
+                    return new Promise((_resolve, _reject) => {
+                        setTimeout(() => {
+                            this.selectedMagic += diff;
+                            _resolve();
+                        }, ARROW_MOVE_SPEED);
+                    });
+                })();
+            }
+            setTimeout(resolve, 1000);
+        });
+    }
+
+    async useMagic(magicScenario) {
+        return new Promise(async (resolve, reject) => {
+            const enemy = this.findEnemyInfoByIndex(magicScenario.to);
+            const enemyName = enemy.name;
+
+            this.attackRenderTimestamp = 0;
+            this.currentAttackName = magicScenario.spell;
+            this.currentAttackTarget = magicScenario.to;
+            const attackInfo = this.MagicList[magicScenario.spell];
+            this.renderingTextInUI = [`${magicScenario.from} uses ${magicScenario.spell} to ${enemyName}!`,
+                `Use ${attackInfo.mana} mana!`
+            ];
+            this.findPlayerInfoByName(magicScenario.from).remainMP -= attackInfo.mana;
+
+            // console.log(`===========================================`)
+            // console.log(this.MagicList)
+            // console.log(magicScenario)
+            // console.log(attackInfo)
+            // console.log(`===========================================`)
+            await this._reduceRemainHP({
+                enemy,
+                scenario: magicScenario,
+                attackType: `Magic`
+            });
+
+            // const timestampMax = attackInfo.col * attackInfo.row;
+            // while (this.attackRenderTimestamp < timestampMax) {
+            //     await (() => {
+            //         return new Promise((_resolve, _reject) => {
+            //             setTimeout(() => {
+            //                 this.attackRenderTimestamp++;
+            //                 _resolve();
+            //             }, 1000 / FPS);
+            //         });
+            //     })();
+            // }
+            // await sleep(500);
+
+            // if (attackInfo.damage === 0) {
+            //     this.renderingTextInUI = `${enemyName} avoid!`;
+            // } else {
+            //     this.renderingTextInUI = `${enemyName} got ${magicScenario.damage} damage(s)!`;
+            // }
+
+            // let remainHPDiff = magicScenario.damage;
+            // const avgDiff = 0;
+            // while (remainHPDiff-- > 0) {
+            //     enemy.isAttacking = true;
+            //     await (() => {
+            //         return new Promise((_resolve, _reject) => {
+            //             setTimeout(() => {
+            //                 enemy.remainHP--;
+            //                 _resolve();
+            //             }, 3 * 1000 / FPS);
+            //         });
+            //     })();
+            // }
+            // enemy.isAttacking = false;
+
+            // console.log(`magic done done`);
+            setTimeout(() => {
+                this.renderingTextInUI = ``;
+                this.attackRenderTimestamp = 0;
+                resolve();
+            }, 1000);
+        });
+    }
+
+    findPlayerInfoByIndex(idx) {
+        return this.PlayerList[idx];
+    }
+
+    findPlayerInfoByName(name) {
+        for (let idx = 0; idx < this.PlayerList.length; idx++) {
+            if (name === this.PlayerList[idx].name) {
+                return this.PlayerList[idx];
+            }
+        }
+        return null;
     }
 
 
@@ -195,7 +464,7 @@ class Battle {
     findEnemyInfoByName(name) {
         for (let idx = 0; idx < this.enemiesList.length; idx++) {
             if (name === this.enemiesList[idx].name) {
-                return idx;
+                return this.enemiesList[idx];
             }
         }
         return null;
@@ -204,7 +473,7 @@ class Battle {
     drawEnemySelected(idx) {
         if (this.UIMode === UI_MODE.ENEMY_SELECT) {
             const enemyInfo = this.findEnemyInfoByIndex(idx);
-            this.renderTextInUI(enemyInfo.description);
+            this.renderTextInUI([enemyInfo.name].concat(enemyInfo.description));
             // enemy.drawStartPos
 
             // Draw Arrow
@@ -253,8 +522,11 @@ class Battle {
                     return new Promise((_resolve, _reject) => {
                         setTimeout(() => {
                             this.selectedEnemy += diff;
+                            while (this.findEnemyInfoByIndex(this.selectedEnemy).status === `Dead`) {
+                                this.selectedEnemy += diff;
+                            }
                             _resolve();
-                        }, 500);
+                        }, ARROW_MOVE_SPEED);
                     });
                 })();
             }
@@ -282,7 +554,7 @@ class Battle {
     }
 
     async moveMenuSelectorArrow(targetIndex) {
-        console.log(`moveMenuSelectorArrow : ${this.selectedMenu} -> ${targetIndex}`)
+        // console.log(`moveMenuSelectorArrow : ${this.selectedMenu} -> ${targetIndex}`)
         return new Promise(async (resolve, reject) => {
             let diff = 0;
             if (this.selectedMenu < targetIndex) {
@@ -294,13 +566,12 @@ class Battle {
             }
 
             while (this.selectedMenu !== targetIndex) {
-                console.log(` while this.selectedMenu : `, this.selectedMenu)
                 await (() => {
                     return new Promise((_resolve, _reject) => {
                         setTimeout(() => {
                             this.selectedMenu += diff;
                             _resolve();
-                        }, 500);
+                        }, ARROW_MOVE_SPEED);
                     });
                 })();
             }
@@ -352,6 +623,7 @@ class Battle {
             const charInfo = info;
             charInfo.isAttacking = false;
             charInfo.turnPoint = 0;
+            charInfo.opacity = 1;
             charInfo.status = ``;
             // charInfo.animateHP = charInfo.HP;
             // charInfo.animateMP = charInfo.MP;
@@ -404,16 +676,9 @@ class Battle {
 
     async renderPlayerCharacterInUI() {
         if (this.UIMode === UI_MODE.BATTLE_MENU) {
-            const players = [];
-            for (const player of this.Characters) {
-                if (player.type === `Player`) {
-                    players.push(player);
-                }
-            }
-
-            for (let idx = 0; idx < players.length; idx++) {
+            for (let idx = 0; idx < this.PlayerList.length; idx++) {
                 (() => {
-                    const character = players[idx];
+                    const character = this.PlayerList[idx];
 
                     // Render name
                     this.ctx.font = `14px Arial`;
@@ -441,19 +706,31 @@ class Battle {
 
                     // Render HP / MP Bar
                     // HP Bar
+
                     this.ctx.lineWidth = 1;
+                    this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
                     this.ctx.strokeStyle = `#FFFFFF`;
                     this.ctx.beginPath();
                     this.ctx.roundRect(
                         (this.UIContainer.left + 20) + (((this.UIContainer.width * 0.15) + 10) * idx),
                         this.UIContainer.top + 102,
-                        (this.UIContainer.width * 0.15) - 20,
+                        ((this.UIContainer.width * 0.15) - 20),
                         14,
                         this.UIContainer.borderRadius / 2
                     );
-                    this.ctx.fillStyle = `rgba(255, 0, 0, 0.5)`
                     this.ctx.fill()
                     this.ctx.stroke();
+
+                    this.ctx.fillStyle = `rgba(255, 0, 0, 0.5)`
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(
+                        (this.UIContainer.left + 20) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                        this.UIContainer.top + 102,
+                        ((this.UIContainer.width * 0.15) - 20) * (character.remainHP / character.HP),
+                        14,
+                        this.UIContainer.borderRadius / 2
+                    );
+                    this.ctx.fill()
 
                     // MP Bar
                     this.ctx.lineWidth = 1;
@@ -466,9 +743,20 @@ class Battle {
                         14,
                         this.UIContainer.borderRadius / 2
                     );
-                    this.ctx.fillStyle = `rgba(0, 0, 255, 0.5)`
+                    this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
                     this.ctx.fill()
                     this.ctx.stroke();
+
+                    this.ctx.fillStyle = `rgba(0, 0, 255, 0.5)`
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(
+                        (this.UIContainer.left + 20) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                        this.UIContainer.top + 116,
+                        ((this.UIContainer.width * 0.15) - 20) * (character.remainMP / character.MP),
+                        14,
+                        this.UIContainer.borderRadius / 2
+                    );
+                    this.ctx.fill()
 
                     // Render portrait frame
                     this.ctx.lineWidth = 1;
@@ -569,109 +857,146 @@ class Battle {
         for (let idx = 0; idx < this.enemiesList.length; idx++) {
             const enemy = this.enemiesList[idx];
             enemy.drawStartPos = {
-                x: drawStartLeftPos + ((128 + drawPadding) * idx),
+                x: drawStartLeftPos + ((128 + drawPadding) * idx) + +this.screenShakedEffectDistance,
                 y: drawStartTopPos
             }
-            // Render name
-            // Name bar
-            this.ctx.lineWidth = 1;
-            this.ctx.strokeStyle = `transparent`;
-            this.ctx.beginPath();
-            this.ctx.roundRect(
-                enemy.drawStartPos.x + 16,
-                enemy.drawStartPos.y - 29,
-                108, 20,
-                this.UIContainer.borderRadius / 2
-            );
-            this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
-            this.ctx.fill()
-            this.ctx.stroke();
+            if (enemy.status !== `Dead`) {
+                if (enemy.status === `Deading`) {
+                    this.ctx.globalAlpha = enemy.opacity;
+                }
 
-            // Name text
-            this.ctx.fillStyle = `#FFFFFF`
-            this.ctx.font = `14px Arial`;
-            this.ctx.textAlign = `center`;
-            this.ctx.fillText(enemy.name,
-                enemy.drawStartPos.x + 68,
-                enemy.drawStartPos.y - 14
-            );
+
+                // Render name
+                // Name bar
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeStyle = `transparent`;
+                this.ctx.beginPath();
+                this.ctx.roundRect(
+                    enemy.drawStartPos.x + 16,
+                    enemy.drawStartPos.y - 29,
+                    108, 20,
+                    this.UIContainer.borderRadius / 2
+                );
+                this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
+                this.ctx.fill()
+                this.ctx.stroke();
+
+                // Name text
+                this.ctx.fillStyle = `#FFFFFF`
+                this.ctx.font = `14px Arial`;
+                this.ctx.textAlign = `center`;
+                this.ctx.fillText(enemy.name,
+                    enemy.drawStartPos.x + 68,
+                    enemy.drawStartPos.y - 14
+                );
+
+                // Draw enemy shadow
+                this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
+                this.ctx.beginPath();
+                this.ctx.ellipse(
+                    enemy.drawStartPos.x + 64,
+                    enemy.drawStartPos.y + 118,
+                    50, 10,
+                    0,
+                    0,
+                    2 * Math.PI);
+                this.ctx.fill();
+
+
+                // Render HP / MP Bar
+                // HP Bar
+                this.ctx.lineWidth = 1;
+                this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
+                this.ctx.strokeStyle = `#FFFFFF`;
+                this.ctx.beginPath();
+                this.ctx.roundRect(
+                    enemy.drawStartPos.x + 28,
+                    enemy.drawStartPos.y + 135,
+                    (this.UIContainer.width * 0.15) - 20,
+                    20,
+                    this.UIContainer.borderRadius / 2
+                );
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                this.ctx.fillStyle = `rgba(255, 0, 0, 0.5)`
+                // console.log(` (enemy.remainHP / enemy.HP),`,((this.UIContainer.width * 0.15) - 20) * (enemy.remainHP / enemy.HP))
+                this.ctx.beginPath();
+                this.ctx.roundRect(
+                    enemy.drawStartPos.x + 28,
+                    enemy.drawStartPos.y + 135,
+                    ((this.UIContainer.width * 0.15) - 20) * (enemy.remainHP / enemy.HP),
+                    20,
+                    this.UIContainer.borderRadius / 2
+                );
+                this.ctx.fill();
+
+                // MP Bar
+                // this.ctx.lineWidth = 1;
+                // this.ctx.strokeStyle = `#FFFFFF`;
+                // this.ctx.beginPath();
+                // this.ctx.roundRect(
+                //     enemy.drawStartPos.x + 28,
+                //     enemy.drawStartPos.y + 155,
+                //     (this.UIContainer.width * 0.15) - 20,
+                //     20,
+                //     this.UIContainer.borderRadius / 2
+                // );
+                // this.ctx.fillStyle = `rgba(0, 0, 255, 0.5)`
+                // this.ctx.fill()
+                // this.ctx.stroke();
+
+                // Render info
+                this.ctx.fillStyle = `#FFFFFF`
+                this.ctx.font = `14px Arial`;
+                const hpmpText = {
+                    HP: `${enemy.remainHP} / ${enemy.HP}`,
+                    MP: enemy.type === `Player` ?
+                        `${enemy.remainMP} / ${enemy.MP}` : `?? / ??`,
+                }
+                this.ctx.textAlign = `center`;
+                this.ctx.fillText(hpmpText.HP,
+                    enemy.drawStartPos.x + 64,
+                    enemy.drawStartPos.y + 150
+                );
+                // this.ctx.fillText(hpmpText.MP,
+                //     enemy.drawStartPos.x + 64,
+                //     enemy.drawStartPos.y + 170
+                // );
+
+
+                this.ctx.globalAlpha = 1;
+            }
 
             // Draw emeny image
+            // this.ctx.globalCompositeOperation = "source-over";
             const isJump = this.isBattleStart ? 2 : 1;
-            if (enemy.isAttacking === true) {
-                if (this.attackingBlinkEffectCount++ % 2 === 0) {
-                    this.ctx.drawImage(enemy.imageInfo,
-                        enemy.drawStartPos.x,
-                        enemy.drawStartPos.y - 10,
-                        128, 128);
+            if (enemy.status === `Deading`) {
+                if (enemy.opacity <= 0) {
+                    enemy.status = `Dead`;
                 }
-            } else {
+                this.ctx.globalAlpha = enemy.opacity;
                 this.ctx.drawImage(enemy.imageInfo,
                     enemy.drawStartPos.x,
-                    enemy.drawStartPos.y - (10 * ((this.isJumpFlag + idx) % isJump)),
+                    enemy.drawStartPos.y,
                     128, 128);
+                this.ctx.globalAlpha = 1;
+            } else if (enemy.status !== `Dead`) {
+                if (enemy.isAttacking === true) {
+                    if (parseInt(++this.attackingBlinkEffectCount / 4) % 2 === 0) {
+                        this.ctx.drawImage(enemy.imageInfo,
+                            enemy.drawStartPos.x,
+                            enemy.drawStartPos.y,
+                            128, 128);
+                    }
+                } else {
+                    this.ctx.drawImage(enemy.imageInfo,
+                        enemy.drawStartPos.x,
+                        enemy.drawStartPos.y - (10 * ((this.isJumpFlag + idx) % isJump)),
+                        128, 128);
+                }
+
             }
-
-            // Render HP / MP Bar
-            // HP Bar
-            this.ctx.lineWidth = 1;
-            this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
-            this.ctx.strokeStyle = `#FFFFFF`;
-            this.ctx.beginPath();
-            this.ctx.roundRect(
-                enemy.drawStartPos.x + 28,
-                enemy.drawStartPos.y + 135,
-                (this.UIContainer.width * 0.15) - 20,
-                20,
-                this.UIContainer.borderRadius / 2
-            );
-            this.ctx.fill();
-            this.ctx.stroke();
-
-            this.ctx.fillStyle = `rgba(255, 0, 0, 0.5)`
-            // console.log(` (enemy.remainHP / enemy.HP),`,((this.UIContainer.width * 0.15) - 20) * (enemy.remainHP / enemy.HP))
-            this.ctx.beginPath();
-            this.ctx.roundRect(
-                enemy.drawStartPos.x + 28,
-                enemy.drawStartPos.y + 135,
-                ((this.UIContainer.width * 0.15) - 20) * (enemy.remainHP / enemy.HP),
-                20,
-                this.UIContainer.borderRadius / 2
-            );
-            this.ctx.fill();
-
-            // MP Bar
-            // this.ctx.lineWidth = 1;
-            // this.ctx.strokeStyle = `#FFFFFF`;
-            // this.ctx.beginPath();
-            // this.ctx.roundRect(
-            //     enemy.drawStartPos.x + 28,
-            //     enemy.drawStartPos.y + 155,
-            //     (this.UIContainer.width * 0.15) - 20,
-            //     20,
-            //     this.UIContainer.borderRadius / 2
-            // );
-            // this.ctx.fillStyle = `rgba(0, 0, 255, 0.5)`
-            // this.ctx.fill()
-            // this.ctx.stroke();
-
-            // Render info
-            this.ctx.fillStyle = `#FFFFFF`
-            this.ctx.font = `14px Arial`;
-            const hpmpText = {
-                HP: `${enemy.remainHP} / ${enemy.HP}`,
-                MP: enemy.type === `Player` ?
-                    `${enemy.remainMP} / ${enemy.MP}` : `?? / ??`,
-            }
-            this.ctx.textAlign = `center`;
-            this.ctx.fillText(hpmpText.HP,
-                enemy.drawStartPos.x + 64,
-                enemy.drawStartPos.y + 150
-            );
-            // this.ctx.fillText(hpmpText.MP,
-            //     enemy.drawStartPos.x + 64,
-            //     enemy.drawStartPos.y + 170
-            // );
         }
     }
 
@@ -682,12 +1007,6 @@ class Battle {
 
     async renderTextInUI(str = this.renderingTextInUI) {
         let textArr;
-
-        async function sleep(timer = 1000) {
-            return new Promise((resolve, reject) => {
-                setTimeout(resolve, timer);
-            })
-        }
 
         if (typeof str === `string`) {
             textArr = [str];
@@ -707,10 +1026,6 @@ class Battle {
             );
         }
         // console.log(`this.renderTextInUI : \n`, textArr.join('\n'));
-    }
-
-    renderTextInUIWithTimer(str) {
-
     }
 
     renderBattleStartText() {
@@ -748,6 +1063,33 @@ class Battle {
         }
     }
 
+    async attackedByEnemy(scenario) {
+
+        const enemy = this.findEnemyInfoByIndex(scenario.from);
+        this.renderingTextInUI = `${enemy.name}'s ${scenario.attackName}!`;
+
+        this.screenShakedEffectDistance = this.ScreenShakedEffectDistanceDefault;
+        let shakeCount = this.ScreenShakedEffectDistanceDefault;
+        while (shakeCount-- > 0) {
+            await (() => {
+                return new Promise((_resolve, _reject) => {
+                    const direction = shakeCount % 2 === 0 ? 1 : -1;
+                    setTimeout(() => {
+                        this.screenShakedEffectDistance = (Math.abs(this.screenShakedEffectDistance) - 2) * direction;
+                        _resolve();
+                    }, 2 * 1000 / FPS);
+                });
+            })();
+        }
+
+        this.renderingTextInUI = `${scenario.to} got ${scenario.damage} damage(s)!`;
+
+        this.findPlayerInfoByName(scenario.to).remainHP -= scenario.damage;
+
+        this.screenShakedEffectDistance = 0;
+        await sleep(1500);
+    }
+
     addBattleScenario(scenarioObject) {
         this.battleScenario.push(scenarioObject);
     }
@@ -758,10 +1100,8 @@ class Battle {
                 console.log(`Run scenario : `, scenario)
                 switch (scenario.action) {
                     case `Attack`: {
-                        console.log(1)
                         this.UIMode = UI_MODE.BATTLE_MENU;
                         await this.moveMenuSelectorArrow(0);
-                        console.log(2)
                         // console.log(`ENEMY:`, this.findEnemyInfoByIndex(scenario.to));
                         console.log(`Select enemy`)
                         this.UIMode = UI_MODE.ENEMY_SELECT;
@@ -773,10 +1113,35 @@ class Battle {
                         this.UIMode = UI_MODE.ATTACK_RESULT;
                         break;
                     }
+                    case `Magic`: {
+                        this.UIMode = UI_MODE.BATTLE_MENU;
+                        await this.moveMenuSelectorArrow(1);
+                        // console.log(`ENEMY:`, this.findEnemyInfoByIndex(scenario.to));
+                        // TODO: Add magic ui
+                        console.log(`Select magic`)
+                        this.UIMode = UI_MODE.MAGIC_SELECT;
+                        await this.selectMagic(scenario);
+                        this.UIMode = UI_MODE.ENEMY_SELECT;
+                        await this.moveEnemySelectorArrow(scenario.to);
+                        // await this.moveEnemySelectorArrow(scenario.to);
+                        console.log(`Attack to enemy`);
+                        this.UIMode = UI_MODE.ATTACKING;
+                        await this.useMagic(scenario);
+                        this.UIMode = UI_MODE.ATTACK_RESULT;
+                        break;
+                    }
+                    // Attack from monster
+                    case `MonsterAttack`: {
+                        this.UIMode = UI_MODE.ATTACK_BY_ENEMY;
+                        await this.attackedByEnemy(scenario);
+                        this.UIMode = UI_MODE.BATTLE_MENU;
+                        break;
+                    }
                 }
                 console.log(`Battle phase done : `, scenario);
             }
             console.log(`Battle all scenario done`);
+            this.end();
             resolve();
         });
     }
@@ -788,7 +1153,12 @@ class Battle {
         this.ctx.clearRect(0, 0, 640, 640);
 
         // Render menu arrow
-        this.ctx.drawImage(this.backgroundImageInstance, 0, 0, 640, 640);
+        // this.screenShakedEffectDistance++
+        this.ctx.drawImage(this.backgroundImageInstance,
+            this.screenShakedEffectDistance,
+            0, //this.screenShakedEffectDistance,
+            640, 640);
+
         this.renderUIBox();
         if (animateCountForCharacterUIRender++ > 10) {
             this.sortCharacters();
@@ -816,7 +1186,6 @@ class Battle {
             this.fadeFactor += this.fadeSpeed;
         }
         this.ctx.fillStyle = `rgba(0, 0, 0, ${this.fadeFactor})`;
-        console.log(`rgba(0, 0, 0, ${this.fadeFactor})`);
         this.ctx.fillRect(0, 0, 640, 640);
     }
 
@@ -842,12 +1211,16 @@ class Battle {
             if (this.UIMode === UI_MODE.BATTLE_MENU) {
                 this.drawMenuText();
                 this.renderPlayerCharacterInUI();
+            } else if (this.UIMode === UI_MODE.MAGIC_SELECT) {
+                this.renderSelectMagicInUI();
             } else if (this.UIMode === UI_MODE.ENEMY_SELECT) {
                 this.drawEnemySelected(this.selectedEnemy);
             } else if (this.UIMode === UI_MODE.ATTACKING) {
-                this.renderAttackEnemy(this.selectedEnemy, this.currentAttackName);
+                await this.renderAttackEnemy(this.selectedEnemy, this.currentAttackName);
                 this.renderTextInUI();
             } else if (this.UIMode === UI_MODE.ATTACK_RESULT) {
+                this.renderTextInUI();
+            } else if (this.UIMode === UI_MODE.ATTACK_BY_ENEMY) {
                 this.renderTextInUI();
             }
         }, 1000 / FPS);
@@ -856,10 +1229,15 @@ class Battle {
     async start() {
         let pixelateCount = 48;
 
-        for (const enemy of this.Characters) {
-            if (enemy.type === `Enemy`) {
-                this.enemiesList.push(enemy);
+        for (const character of this.Characters) {
+            if (character.type === `Enemy`) {
+                this.enemiesList.push(character);
+            } else {
+                this.PlayerList.push(character);
             }
+        }
+        for (const magic in this.MagicList) {
+            this.MagicListArray.push(this.MagicList[magic]);
         }
 
         const startPixelate = async () => {
@@ -879,6 +1257,7 @@ class Battle {
                 }, 1000);
             }
         }
+        startTimer();
         window.requestAnimationFrame(startPixelate);
     }
 
@@ -896,12 +1275,12 @@ class Battle {
                 this.pixelate(remainPixelateCount++);
 
                 window.requestAnimationFrame(startPixelate);
-                console.log(`ENDING`)
             } else {
                 this.isBattleEnd = true;
                 clearInterval(this.animationInterval);
                 this.ctx.clearRect(0, 0, 640, 640);
                 console.log(`END`)
+                endTimer();
                 // setTimeout(() => {
                 // this.animate();
                 // }, 1000);
