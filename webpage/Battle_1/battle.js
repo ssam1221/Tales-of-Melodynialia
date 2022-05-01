@@ -76,6 +76,7 @@ class Battle {
             this.MagicList = {};
             this.MagicListArray = [];
 
+            this.currentActiveCharacter = ``;
             this.PlayerList = [];
             this.enemiesList = [];
             this.attackingBlinkEffectCount = 0;
@@ -698,6 +699,7 @@ class Battle {
                         this.UIContainer.top + 25,
                     );
 
+
                     // Render border
                     this.ctx.beginPath();
                     this.ctx.roundRect(
@@ -707,7 +709,11 @@ class Battle {
                         this.UIContainer.height * 0.85,
                         this.UIContainer.borderRadius
                     );
-                    this.ctx.strokeStyle = `#CCCCCC`;
+                    if (this.currentActiveCharacter === character.name) {
+                        this.ctx.strokeStyle = `#66FF66`;
+                    } else {
+                        this.ctx.strokeStyle = `#CCCCCC`;
+                    }
                     this.ctx.lineWidth = this.UIContainer.borderWidth / 2;
                     this.ctx.stroke();
 
@@ -876,8 +882,7 @@ class Battle {
 
                 // Render name
                 // Name bar
-                this.ctx.lineWidth = 1;
-                this.ctx.strokeStyle = `transparent`;
+                this.ctx.lineWidth = 2;
                 this.ctx.beginPath();
                 this.ctx.roundRect(
                     enemy.drawStartPos.x + 16,
@@ -886,7 +891,13 @@ class Battle {
                     this.UIContainer.borderRadius / 2
                 );
                 this.ctx.fillStyle = `rgba(0, 0, 0, 0.5)`
-                this.ctx.fill()
+                this.ctx.fill();
+                if (this.currentActiveCharacter === idx) {
+                    this.ctx.strokeStyle = `#FF0000`;
+                }
+                else {
+                    this.ctx.strokeStyle = `transparent`;
+                }
                 this.ctx.stroke();
 
                 // Name text
@@ -1136,6 +1147,7 @@ class Battle {
                     console.log(`Turn ${turn++} : `);
                 }
                 console.log(`Run scenario : `, scenario);
+                this.currentActiveCharacter = scenario.from;
                 switch (scenario.action) {
                     case `Attack`: {
                         this.UIMode = UI_MODE.BATTLE_MENU;
