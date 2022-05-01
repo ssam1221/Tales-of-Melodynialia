@@ -1,8 +1,9 @@
-const FPS = 60;
+const FPS = 40;
 
-const ARROW_MOVE_SPEED = 500;
+const ARROW_MOVE_SPEED = 800;
 
 const UI_MODE = {
+    NONE: `NONE`,
     TEXT: `TEXT`,
     BATTLE_MENU: `BATTLE_MENU`,
     ATTACK: `ATTACK`,
@@ -12,7 +13,8 @@ const UI_MODE = {
     ATTACK_RESULT: `ATTACK_RESULT`,
     ATTACK_BY_ENEMY: `ATTACK_BY_ENEMY`,
     ITEM: `ITEM`,
-    MAGIC: `MAGIC`
+    MAGIC: `MAGIC`,
+    BATTLE_END: `BATTLE_END`
 }
 
 let timerInterval = 0;
@@ -55,7 +57,6 @@ class Battle {
 
             this.UIContainer = {};
             this.UIContainerTextLine = 0;
-            this.UIContainerText = ``;
 
             // UI Render Mode
             // Text | BattleMenu | Attack | EmenySelect | Item | Magic ...
@@ -172,9 +173,10 @@ class Battle {
                     });
                 })();
             }
-            await sleep(500);
+            await sleep(1000);
 
-            if (attackInfo.damage === 0) {
+            if (scenario.damage === 0) {
+                console.log(`Avoid attack`);
                 this.renderingTextInUI = `${enemy.name} avoid!`;
             } else {
                 this.renderingTextInUI = `${enemy.name} got ${scenario.damage} damage(s)!`;
@@ -208,6 +210,7 @@ class Battle {
                         });
                     })();
                 }
+                console.log(`### ${enemy.name} fainted`);
                 this.renderingTextInUI = `${enemy.name} fainted!`;
                 enemy.status = `Dead`;
             }
@@ -222,6 +225,10 @@ class Battle {
             const enemy = this.findEnemyInfoByIndex(attackScenario.to);
             const enemyName = enemy.name;
 
+            if (enemy.remainHP <= 0) {
+                console.warn(`Enemy ${enemy.name} already dead.`);
+            }
+
             this.attackRenderTimestamp = 0;
             this.currentAttackName = attackScenario.attackName;
             this.currentAttackTarget = attackScenario.to;
@@ -231,13 +238,13 @@ class Battle {
                 this.renderingTextInUI = `${attackScenario.from} attacks ${enemyName}!`;
             }
 
+
             await this._reduceRemainHP({
                 enemy,
                 scenario: attackScenario,
                 attackType: `Attack`
             });
 
-            console.log(`attackEnemy done`);
             setTimeout(() => {
                 this.renderingTextInUI = ``;
                 this.attackRenderTimestamp = 0;
@@ -346,7 +353,7 @@ class Battle {
 
     async selectMagic(magicScenario) {
         const targetIndex = this.MagicListArray.findIndex(magic => {
-            console.log(`magic ::: `, magic);
+            // console.log(`magic ::: `, magic);
             return magic.name === magicScenario.spell;
         });
         return new Promise(async (resolve, reject) => {
@@ -387,6 +394,9 @@ class Battle {
             this.renderingTextInUI = [`${magicScenario.from} uses ${magicScenario.spell} to ${enemyName}!`,
                 `Use ${attackInfo.mana} mana!`
             ];
+            if (this.findPlayerInfoByName(magicScenario.from).remainMP < attackInfo.mana) {
+                console.warn(`The magic scenario need more mana.`);
+            }
             this.findPlayerInfoByName(magicScenario.from).remainMP -= attackInfo.mana;
 
             // console.log(`===========================================`)
@@ -411,7 +421,7 @@ class Battle {
             //         });
             //     })();
             // }
-            // await sleep(500);
+            // await sleep(1000);
 
             // if (attackInfo.damage === 0) {
             //     this.renderingTextInUI = `${enemyName} avoid!`;
@@ -505,7 +515,7 @@ class Battle {
     }
 
     async moveEnemySelectorArrow(targetIndex) {
-        console.log(`moveEnemySelectorArrow : ${this.selectedEnemy} -> ${targetIndex}`)
+        // console.log(`moveEnemySelectorArrow : ${this.selectedEnemy} -> ${targetIndex}`);
         return new Promise(async (resolve, reject) => {
             let diff = 0;
             if (this.selectedEnemy < targetIndex) {
@@ -536,20 +546,18 @@ class Battle {
 
     drawMenuSelectorArrow(idx) {
         if (this.UIMode === UI_MODE.BATTLE_MENU) {
-            const selector = this.canvas.getContext(`2d`);
             const base = {
                 left: 465 + this.UIContainer.left,
                 top: 2 + this.UIContainer.top + ((this.UIContainer.height / 5) * (1 + idx))
             }
-            selector.save();
-            selector.beginPath();
-            selector.moveTo(base.left, base.top);
-            selector.lineTo(base.left - 10, base.top + 10);
-            selector.lineTo(base.left - 10, base.top - 10);
-            selector.fill();
-            selector.rotate(45 * Math.PI / 180);
-            selector.restore();
-            return selector;
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.moveTo(base.left, base.top);
+            this.ctx.lineTo(base.left - 10, base.top + 10);
+            this.ctx.lineTo(base.left - 10, base.top - 10);
+            this.ctx.fill();
+            this.ctx.rotate(45 * Math.PI / 180);
+            this.ctx.restore();
         }
     }
 
@@ -974,6 +982,7 @@ class Battle {
             if (enemy.status === `Deading`) {
                 if (enemy.opacity <= 0) {
                     enemy.status = `Dead`;
+                    console.log(`Enemy ${enemy.name} is dead.`);
                 }
                 this.ctx.globalAlpha = enemy.opacity;
                 this.ctx.drawImage(enemy.imageInfo,
@@ -1040,27 +1049,49 @@ class Battle {
         }
     }
 
-    renderBattleEndText() {
-        if (this.UIMode === UI_MODE.TEXT) {
-            return new Promise(async (resolve, reject) => {
+    getAwards() {
+        const ret = {
+            EXP: 0,
+            Gold: 0
+        }
+        for (const enemy of this.enemiesList) {
+            ret.EXP += enemy.EXP;
+            ret.Gold += enemy.gold;
+        }
+        return ret;
+    }
+
+    async setBattleEndText() {
+        return new Promise(async (resolve, reject) => {
+            if (this.UIMode === UI_MODE.BATTLE_END) {
                 if (this.isBattleEndTextRendering === false) {
                     this.isBattleEndTextRendering = true;
 
+                    const awards = this.getAwards();
+
                     let textArr = [];
                     textArr.push(`You Win!`);
-                    textArr.push(`Got 371 EXP!`);
-                    this.renderTextInUI(textArr);
-                    this.UIContainerText = [...textArr];
+                    // this.renderTextInUI(textArr);
+                    this.renderingTextInUI = [...textArr];
+                    await sleep(500);
+                    textArr.push(`Got ${awards.Gold} Gold!`);
+                    this.renderingTextInUI = [...textArr];
+                    await sleep(500);
+                    textArr.push(`Got ${awards.EXP} EXP!`);
+                    this.renderingTextInUI = [...textArr];
+                    await sleep(500);
+
                 } else {
-                    console.log(this.UIContainerText)
-                    // if (Array.isArray(this.UIContainerText)) {
-                    //     this.UIContainerText = this.UIContainerText.join('\n');
+                    console.log(this.renderingTextInUI)
+                    // if (Array.isArray(this.renderingTextInUI)) {
+                    //     this.renderingTextInUI = this.renderingTextInUI.join('\n');
                     // }
-                    this.renderTextInUI(this.UIContainerText);
+                    // this.renderTextInUI(this.renderingTextInUI);
                 }
+                await sleep(2000);
                 resolve();
-            });
-        }
+            }
+        });
     }
 
     async attackedByEnemy(scenario) {
@@ -1068,23 +1099,26 @@ class Battle {
         const enemy = this.findEnemyInfoByIndex(scenario.from);
         this.renderingTextInUI = `${enemy.name}'s ${scenario.attackName}!`;
 
-        this.screenShakedEffectDistance = this.ScreenShakedEffectDistanceDefault;
-        let shakeCount = this.ScreenShakedEffectDistanceDefault;
-        while (shakeCount-- > 0) {
-            await (() => {
-                return new Promise((_resolve, _reject) => {
-                    const direction = shakeCount % 2 === 0 ? 1 : -1;
-                    setTimeout(() => {
-                        this.screenShakedEffectDistance = (Math.abs(this.screenShakedEffectDistance) - 2) * direction;
-                        _resolve();
-                    }, 2 * 1000 / FPS);
-                });
-            })();
+        if (scenario.damage !== 0) {
+            this.screenShakedEffectDistance = this.ScreenShakedEffectDistanceDefault;
+            let shakeCount = this.ScreenShakedEffectDistanceDefault;
+            while (shakeCount-- > 0) {
+                await (() => {
+                    return new Promise((_resolve, _reject) => {
+                        const direction = shakeCount % 2 === 0 ? 1 : -1;
+                        setTimeout(() => {
+                            this.screenShakedEffectDistance = (Math.abs(this.screenShakedEffectDistance) - 2) * direction;
+                            _resolve();
+                        }, 2 * 1000 / FPS);
+                    });
+                })();
+            }
+            this.renderingTextInUI = `${scenario.to} got ${scenario.damage} damage(s)!`;
+            this.findPlayerInfoByName(scenario.to).remainHP -= scenario.damage;
+        } else {
+            await sleep(1500);
+            this.renderingTextInUI = `${scenario.to} avoid!`;
         }
-
-        this.renderingTextInUI = `${scenario.to} got ${scenario.damage} damage(s)!`;
-
-        this.findPlayerInfoByName(scenario.to).remainHP -= scenario.damage;
 
         this.screenShakedEffectDistance = 0;
         await sleep(1500);
@@ -1095,19 +1129,23 @@ class Battle {
     }
 
     async runBattle() {
+        let turn = 1;
         return new Promise(async (resolve, reject) => {
             for (const scenario of this.battleScenario) {
-                console.log(`Run scenario : `, scenario)
+                if ((scenario.from === `Clef`) && (scenario.action === `Attack`)) {
+                    console.log(`Turn ${turn++} : `);
+                }
+                console.log(`Run scenario : `, scenario);
                 switch (scenario.action) {
                     case `Attack`: {
                         this.UIMode = UI_MODE.BATTLE_MENU;
                         await this.moveMenuSelectorArrow(0);
                         // console.log(`ENEMY:`, this.findEnemyInfoByIndex(scenario.to));
-                        console.log(`Select enemy`)
+                        // console.log(`Select enemy`)
                         this.UIMode = UI_MODE.ENEMY_SELECT;
                         await this.moveEnemySelectorArrow(scenario.to);
                         // await this.moveEnemySelectorArrow(scenario.to);
-                        console.log(`Attack to enemy`);
+                        // console.log(`Attack to enemy`);
                         this.UIMode = UI_MODE.ATTACKING;
                         await this.attackEnemy(scenario);
                         this.UIMode = UI_MODE.ATTACK_RESULT;
@@ -1117,14 +1155,13 @@ class Battle {
                         this.UIMode = UI_MODE.BATTLE_MENU;
                         await this.moveMenuSelectorArrow(1);
                         // console.log(`ENEMY:`, this.findEnemyInfoByIndex(scenario.to));
-                        // TODO: Add magic ui
-                        console.log(`Select magic`)
+                        // console.log(`Select magic`)
                         this.UIMode = UI_MODE.MAGIC_SELECT;
                         await this.selectMagic(scenario);
                         this.UIMode = UI_MODE.ENEMY_SELECT;
                         await this.moveEnemySelectorArrow(scenario.to);
                         // await this.moveEnemySelectorArrow(scenario.to);
-                        console.log(`Attack to enemy`);
+                        // console.log(`Attack to enemy`);
                         this.UIMode = UI_MODE.ATTACKING;
                         await this.useMagic(scenario);
                         this.UIMode = UI_MODE.ATTACK_RESULT;
@@ -1138,9 +1175,10 @@ class Battle {
                         break;
                     }
                 }
-                console.log(`Battle phase done : `, scenario);
+                // console.log(`Battle phase done : `, scenario);
             }
             console.log(`Battle all scenario done`);
+            // endTimer();
             this.end();
             resolve();
         });
@@ -1222,6 +1260,8 @@ class Battle {
                 this.renderTextInUI();
             } else if (this.UIMode === UI_MODE.ATTACK_BY_ENEMY) {
                 this.renderTextInUI();
+            } else if (this.UIMode === UI_MODE.BATTLE_END) {
+                this.renderTextInUI();
             }
         }, 1000 / FPS);
     }
@@ -1262,31 +1302,31 @@ class Battle {
     }
 
     async end() {
-        const pixelateCount = 48;
-        let remainPixelateCount = 0;
+        return new Promise(async (resolve, reject) => {
+            const pixelateCount = 48;
+            let remainPixelateCount = 0;
 
-        const startPixelate = async () => {
-            this.startRenderBasicUIs();
-            await this.renderBattleEndText();
-            if (remainPixelateCount < pixelateCount) {
-                if (remainPixelateCount !== 0) {
-                    this.fadeout();
+            this.UIMode = UI_MODE.BATTLE_END;
+
+            const startPixelate = async () => {
+                if (remainPixelateCount < pixelateCount) {
+                    if (remainPixelateCount !== 0) {
+                        this.fadeout();
+                    }
+                    this.pixelate(remainPixelateCount++);
+
+                    window.requestAnimationFrame(startPixelate);
+                } else {
+                    this.isBattleEnd = true;
+                    clearInterval(this.animationInterval);
+                    this.ctx.clearRect(0, 0, 640, 640);
+                    console.log(`Battle complete.`);
+                    endTimer();
+                    resolve();
                 }
-                this.pixelate(remainPixelateCount++);
-
-                window.requestAnimationFrame(startPixelate);
-            } else {
-                this.isBattleEnd = true;
-                clearInterval(this.animationInterval);
-                this.ctx.clearRect(0, 0, 640, 640);
-                console.log(`END`)
-                endTimer();
-                // setTimeout(() => {
-                // this.animate();
-                // }, 1000);
             }
-        }
-        await this.renderBattleEndText();
-        window.requestAnimationFrame(startPixelate);
+            await this.setBattleEndText();
+            window.requestAnimationFrame(startPixelate);
+        });
     }
 }

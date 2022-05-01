@@ -11,6 +11,20 @@ async function loadScript(scriptName) {
 }
 
 window.onload = async () => {
+
+    // document.getElementById(`bgm`).load();
+    // document.getElementById(`bgm`).oncanplaythrough = () => {
+    //     const bgmDuration = {
+    //         minutes: parseInt(document.getElementById(`bgm`).duration / 60).toString().padStart(2, `0`),
+    //         seconds: parseInt(document.getElementById(`bgm`).duration % 60).toString().padStart(2, `0`),
+    //         milliseconds: (document.getElementById(`bgm`).duration % 1).toFixed(3).split(`.`)[1]
+    //         // milliseconds: 0
+    //     }
+    //     document.getElementById(`bgm`).duration;
+
+    //     document.getElementById(`audioTimer`).innerHTML = ` / ${bgmDuration.minutes}:${bgmDuration.seconds}:${bgmDuration.milliseconds}`;
+    // }
+    document.getElementById(`audioTimer`).innerHTML = `04:37:551`
     if (location.href.includes(`battle1`)) {
         await loadScript(`scripts/battle1.js`);
     }
