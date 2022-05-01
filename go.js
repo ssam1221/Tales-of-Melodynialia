@@ -1,8 +1,6 @@
-var http = require('http');
-// var serveStatic = require('serve-static');
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
 
 app.use(express.static('webpage'));
 
-var server = app.listen(8080);
+app.listen(8080);
