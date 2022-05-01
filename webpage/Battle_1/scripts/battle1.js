@@ -43,7 +43,7 @@
             col: 5
         });
         await battleInstance.addAttackEffect({
-            name: `Heal 1`,
+            name: `Cure`,
             description: [`Restore small amount of HP.`],
             type: `Magic`,
             element: `Heal`,
@@ -54,8 +54,8 @@
             col: 8
         });
         await battleInstance.addAttackEffect({
-            name: `Heal 2`,
-            description: [`Restore amount of HP.`],
+            name: `Fire Enchant`,
+            description: [`Add fire element to next attack.`],
             type: `Magic`,
             element: `Heal`,
             target: `Single`,
