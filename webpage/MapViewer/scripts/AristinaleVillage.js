@@ -9,6 +9,7 @@
     const canvasRender = document.getElementById(`canvasRender`);
     const mapCanvas = document.getElementById(`mapCanvas`);
 
+    await NPC.setMapImage(`map/AristinaleVillage.png`);
 
     const NPCFiles = [
         `[Chara]Civilian_Child_A.png`,
@@ -356,7 +357,7 @@
             x: to.x,
             y: to.y
         }
-        console.log(`To : `, to)
+        // console.log(`To : `, to)
     }
 
     let imageTag = new Image();

@@ -24,6 +24,24 @@ class NPC {
 
     static DIRECTION = SPRITE_DIRECTION;
 
+    static mapImage = new Image();
+    static async setMapImage(src) {
+        console.log(`Load map image : `, src)
+        return new Promise((resolve, reject) => {
+            try {
+                this.mapImage.src = src;
+
+                this.mapImage.onload = () => {
+                    console.log(`Load map image : done`);
+                    resolve();
+                };
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+
     constructor(filename) {
         return new Promise((resolve, reject) => {
             this.canvas = document.getElementById(`mapCanvas`);
@@ -135,7 +153,7 @@ class NPC {
     static animate() {
         setInterval(() => {
             this.ctx.clearRect(0, 0, 640, 640);
-            this.ctx.drawImage(mapImage, 0, 0);
+            this.ctx.drawImage(this.mapImage, 0, 0);
             for (const instance of NPCList) {
                 // console.log(`Render : `, instance.img)
                 instance.renderFrame();
