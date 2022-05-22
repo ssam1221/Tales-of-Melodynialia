@@ -633,7 +633,7 @@
 
     setTimeout(() => {
         battleInstance.start();
-    }, 3000);
+    }, 2000);
     // battleInstance.start();
 
     // setTimeout(battleInstance.end.bind(battleInstance), 3000);

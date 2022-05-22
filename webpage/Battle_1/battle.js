@@ -1,6 +1,6 @@
 const FPS = 40;
 
-const ARROW_MOVE_SPEED = 800;
+const ARROW_MOVE_SPEED = 600;
 
 const UI_MODE = {
     NONE: `NONE`,
@@ -484,7 +484,10 @@ class Battle {
     drawEnemySelected(idx) {
         if (this.UIMode === UI_MODE.ENEMY_SELECT) {
             const enemyInfo = this.findEnemyInfoByIndex(idx);
-            this.renderTextInUI([enemyInfo.name].concat(enemyInfo.description));
+            if (enemyInfo.status !== `Dead`) {
+                this.renderTextInUI([enemyInfo.name].concat(enemyInfo.description));
+            }
+
             // enemy.drawStartPos
 
             // Draw Arrow
@@ -894,8 +897,7 @@ class Battle {
                 this.ctx.fill();
                 if (this.currentActiveCharacter === idx) {
                     this.ctx.strokeStyle = `#FF0000`;
-                }
-                else {
+                } else {
                     this.ctx.strokeStyle = `transparent`;
                 }
                 this.ctx.stroke();
