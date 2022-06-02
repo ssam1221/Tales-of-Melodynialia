@@ -54,6 +54,7 @@ class NPC {
             this.isShow = true;
             this.currentTimestamp = 0;
             this.showTimestamp = 0;
+            this.opacity = 1;
             this.ctx = this.canvas.getContext(`2d`);
 
 
@@ -121,6 +122,7 @@ class NPC {
 
     setStartTime(timestamp) {
         this.showTimestamp = timestamp;
+        this.opacity = 0;
     }
 
     setDirection(direction) {
@@ -192,6 +194,12 @@ class NPC {
                 instance.timestamp = new Date().getTime() - startTimestamp;
                 if (instance.timestamp > instance.showTimestamp) {
                     instance.isShow = true;
+                    if (instance.opacity < 1) {
+                        instance.opacity += 0.1;
+                    }
+                    if (instance.opacity > 1) {
+                        instance.opacity = 1;
+                    }
                     instance.renderFrame();
                 }
             }
@@ -282,11 +290,14 @@ class NPC {
                 }
             }
         }
+        this.ctx.save();
+        this.ctx.globalAlpha = this.opacity;
         // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.drawImage(this.imgTag,
             this.spriteSize.width * SPRITE_ORDER[this.spriteImageIndex], this.spriteSize.height * this.direction,
             this.spriteSize.width, this.spriteSize.height,
             this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
             this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
+        this.ctx.restore();
     }
 }

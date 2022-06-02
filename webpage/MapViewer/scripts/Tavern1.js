@@ -80,7 +80,7 @@
         // AnimalList.dog[1].setMovingPattern(`v`, 120);
         // AnimalList.dog[1].setSpeed(12);
 
-        AnimalList.cat[0].setPosition(16, 84);
+        AnimalList.cat[0].setPosition(20, 120);
         AnimalList.cat[0].setDirection(NPC.DIRECTION.DOWN);
         AnimalList.cat[0].setMovingPattern(`s`, 208);
         AnimalList.cat[0].setAnimationDelay(16);
@@ -94,8 +94,8 @@
     // NPCs
     (() => {
 
-        // NPCList[`[Chara]Samurai_USM.png`].setStartTime(5000);
-        NPCList[`[Chara]Samurai_USM.png`].setPosition(33, 84);
+        NPCList[`[Chara]Samurai_USM.png`].setStartTime(1000);
+        NPCList[`[Chara]Samurai_USM.png`].setPosition(100, 104);
         NPCList[`[Chara]Samurai_USM.png`].setMovingPattern(`s`, 0);
         NPCList[`[Chara]Samurai_USM.png`].setAnimationDelay(8);
 
