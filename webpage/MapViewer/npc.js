@@ -15,7 +15,10 @@ const SPRITE_ORDER = [0, 1, 2, 1]
 const mapImage = new Image();
 mapImage.src = "./map.png";
 
+let zoomRatio = 1;
+
 let NPCList = [];
+let startTimestamp = 0;
 
 class NPC {
     // size : 16 x 16
@@ -48,7 +51,16 @@ class NPC {
             this.container = document.getElementById(`container`);
 
             // this.canvas.classList.add(`npc`)
+            this.isShow = true;
+            this.currentTimestamp = 0;
+            this.showTimestamp = 0;
             this.ctx = this.canvas.getContext(`2d`);
+
+
+            this.canvas.width = 320 * zoomRatio;
+            this.canvas.height = 320 * zoomRatio;
+            this.canvas.imageSmoothingEnabled = false;
+
             NPC.ctx = this.ctx;
             this.pattern = `n`;
             this.distance = 0;
@@ -82,17 +94,33 @@ class NPC {
                 this.spriteSize.height = this.imgTag.naturalHeight / 4;
                 // this.canvas.width = this.spriteSize.width;
                 // this.canvas.height = this.spriteSize.height;
-                this.canvas.width = 640;
-                this.canvas.height = 640;
+                // this.canvas.width = 640;
+                // this.canvas.height = 640;
                 // console.log(`Each sprite size : ${this.spriteSize.width} x ${this.spriteSize.height}`)
                 this.ctx.drawImage(this.imgTag, 0, 0, this.spriteSize.width, this.spriteSize.height,
-                    this.renderPosition.x, this.renderPosition.y, this.spriteSize.width, this.spriteSize.height);
+                    this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio, this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
                 // console.log(`Draw NPC to canvas`);
                 this.container.appendChild(this.canvas);
                 NPCList.push(this);
                 resolve(this);
             }
         });
+    }
+
+    static zoom(ratio) {
+        zoomRatio = ratio;
+    }
+
+    show() {
+        this.isShow = true;
+    }
+
+    hide() {
+        this.isShow = false;
+    }
+
+    setStartTime(timestamp) {
+        this.showTimestamp = timestamp;
     }
 
     setDirection(direction) {
@@ -108,8 +136,10 @@ class NPC {
         this.originalPosition.y = y;
         this.renderPosition.x = x;
         this.renderPosition.y = y;
-        this.ctx.drawImage(this.imgTag, 0, 0, this.spriteSize.width, this.spriteSize.height,
-            this.renderPosition.x, this.renderPosition.y, this.spriteSize.width, this.spriteSize.height);
+        this.ctx.drawImage(this.imgTag, 0, 0,
+            this.spriteSize.width, this.spriteSize.height,
+            this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
+            this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
     }
 
     setMovingPattern(pattern, distance) {
@@ -147,16 +177,23 @@ class NPC {
         this.ctx.drawImage(this.imgTag,
             this.spriteSize.width * idx, 0,
             this.spriteSize.width, this.spriteSize.height,
-            this.renderPosition.x, this.renderPosition.y, this.spriteSize.width, this.spriteSize.height);
+            this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
+            this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
     }
 
     static animate() {
+        startTimestamp = new Date().getTime();
         setInterval(() => {
-            this.ctx.clearRect(0, 0, 640, 640);
-            this.ctx.drawImage(this.mapImage, 0, 0);
+            this.ctx.imageSmoothingEnabled = false;
+            this.ctx.clearRect(0, 0, 320 * zoomRatio, 320 * zoomRatio);
+            this.ctx.drawImage(this.mapImage, 0, 0, 320 * zoomRatio, 320 * zoomRatio);
             for (const instance of NPCList) {
                 // console.log(`Render : `, instance.img)
-                instance.renderFrame();
+                instance.timestamp = new Date().getTime() - startTimestamp;
+                if (instance.timestamp > instance.showTimestamp) {
+                    instance.isShow = true;
+                    instance.renderFrame();
+                }
             }
         }, 1000 / FPS);
     }
@@ -166,7 +203,8 @@ class NPC {
         // this.ctx.clearRect(0, 0, this.spriteSize.width, this.spriteSize.height);
         // console.log(`Animation start`)
 
-        if (this.used === false) {
+        if (this.used === false ||
+            this.isShow === false) {
             return;
         }
 
@@ -248,6 +286,7 @@ class NPC {
         this.ctx.drawImage(this.imgTag,
             this.spriteSize.width * SPRITE_ORDER[this.spriteImageIndex], this.spriteSize.height * this.direction,
             this.spriteSize.width, this.spriteSize.height,
-            this.renderPosition.x, this.renderPosition.y, this.spriteSize.width, this.spriteSize.height);
+            this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
+            this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
     }
 }

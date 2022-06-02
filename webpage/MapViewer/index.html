@@ -48,7 +48,7 @@
             height: 640px;
             left: 50px;
             top: 700px;
-            border: 10px solid red;
+            /* border: 10px solid red; */
         }
 
         div#test {
@@ -57,6 +57,11 @@
             left: 200px;
             margin-bottom: 200px;
         }
+
+        div#timer {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
         .npc {
             position: absolute;
             left: 0px;
@@ -68,17 +73,17 @@
 </head>
 
 <body>
-
+    <div id="timer"></div>
     <div id="container">
         <!-- <img id="map" src="map.png"> -->
         <div id="viewerTransparent"></div>
-        <canvas id="mapCanvas" width=640 height=640></canvas>
+        <canvas id="mapCanvas" ></canvas>
     </div>
     <div id="viewer"></div>
 
     <div id="canvasContainer">
         <!-- <img id="imgRender" crossorigin="anonymous"> -->
-        <canvas id="canvasRender" width=640 height=640></canvas>
+        <canvas id="canvasRender" ></canvas>
     </div>
 
     <div id="test">
