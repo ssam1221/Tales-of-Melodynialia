@@ -1,7 +1,9 @@
 (async () => {
 
+    const BGM_NAME = `Tales of Melodynialia - The Crowd Pub.mp3`;
     const VIEWER_MOVING_DURATION = 20; // s
 
+    const bgm = document.getElementById(`bgm`);
     const container = document.getElementById(`container`);
     const viewer = document.getElementById(`viewer`);
     const viewerTransparent = document.getElementById(`viewerTransparent`);
@@ -12,37 +14,49 @@
     NPC.zoom(2);
     await NPC.setMapImage(`map/Tavern1.png`);
 
+    const FoodFiles = [
+        `meatball.png`,
+        `steak.png`
+    ]
+    const FoodList = {};
+
+    // Set Foods
+    for await (const foodFile of FoodFiles) {
+        const foodInstance = await new NPC(`items/${foodFile}`, {
+            type: `item`
+        });
+        FoodList[foodFile] = foodInstance;
+    }
+
     const NPCFiles = [
-        `[Chara]Civilian_Female_A.png`,
-        `[Chara]Civilian_Female_B.png`,
-        `[Chara]Civilian_Female_C.png`,
+        // `[Chara]Civilian_Female_A.png`,
+        // `[Chara]Civilian_Female_B.png`,
+        // `[Chara]Civilian_Female_C.png`,
         `[Chara]Civilian_Male_A.png`,
-        `[Chara]Civilian_Male_B.png`,
-        `[Chara]Civilian_Male_C.png`,
-        `[Chara]Fighter1_USM.png`,
-        `[Chara]Fighter2_USM.png`,
-        `[Chara]Fighter3_USM.png`,
-        `[Chara]Girl1_USM.png`,
-        `[Chara]Hero1_USM.png`,
-        `[Chara]Hero2_USM.png`,
+        // `[Chara]Civilian_Male_B.png`,
+        // `[Chara]Civilian_Male_C.png`,
+        // `[Chara]Fighter1_USM.png`,
+        // `[Chara]Fighter2_USM.png`,
+        // `[Chara]Fighter3_USM.png`,
+        // `[Chara]Girl1_USM.png`,
+        // `[Chara]Hero1_USM.png`,
+        // `[Chara]Hero2_USM.png`,
 
-        `[Chara]Hero3_USM.png`,
-        `[Chara]Witch1_USM.png`,
-        `[Chara]Doctor.png`,
+        // `[Chara]Hero3_USM.png`,
+        // `[Chara]Witch1_USM.png`,
+        // `[Chara]Doctor.png`,
 
-        `[Chara]Thief1_USM.png`,
-        `[Chara]Cook.png`,
+        // `[Chara]Thief1_USM.png`,
+        // `[Chara]Cook.png`,
         `[Chara]Samurai_USM.png`,
-        `[Chara]Priest1_USM.png`,
+        // `[Chara]Priest1_USM.png`,
         // `[Chara]Priest2_USM.png`,
     ]
     const NPCList = {};
     // Set NPCs
     for await (const npcFile of NPCFiles) {
         const npcInstance = await new NPC(npcFile);
-        // npcInstance.setPosition(100, 100);
         NPCList[npcFile] = npcInstance;
-        // npcInstance.show();
     }
 
     const AnimalList = {
@@ -66,6 +80,15 @@
         // AnimalList.goat.push(await new NPC(`[Animal]Goat_pochi.png`));
         // AnimalList.cow.push(await new NPC(`[Animal]Cow_pochi.png`));
     }
+
+    // Foods
+
+    (() => {
+        FoodList[`meatball.png`].setStartTime(8000);
+        FoodList[`meatball.png`].setPosition(180, 154);
+        // FoodList[`steak.png`].setStartTime(1000);
+        // FoodList[`steak.png`].setPosition(132, 104);
+    })();
 
     // Animals
     (() => {
@@ -95,7 +118,7 @@
     (() => {
 
         NPCList[`[Chara]Samurai_USM.png`].setStartTime(1000);
-        NPCList[`[Chara]Samurai_USM.png`].setPosition(100, 104);
+        NPCList[`[Chara]Samurai_USM.png`].setPosition(46, 120);
         NPCList[`[Chara]Samurai_USM.png`].setMovingPattern(`s`, 0);
         NPCList[`[Chara]Samurai_USM.png`].setAnimationDelay(8);
 
@@ -109,8 +132,9 @@
         // NPCList[`[Chara]Fighter3_USM.png`].setMovingPattern(`s`, 0);
         // NPCList[`[Chara]Fighter3_USM.png`].setAnimationDelay(8);
 
-        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(130, 92);
-        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.DOWN);
+        NPCList[`[Chara]Civilian_Male_A.png`].setStartTime(4360);
+        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(180, 120);
+        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.UP);
         NPCList[`[Chara]Civilian_Male_A.png`].setMovingPattern(`s`);
         NPCList[`[Chara]Civilian_Male_A.png`].setAnimationDelay(16);
 
@@ -310,6 +334,23 @@
             `${diff.getSeconds().toString().padStart(2, `0`)}.` +
             `${diff.getMilliseconds().toString().padStart(3, `0`)}`;
     }
+
+    async function loadAudio() {
+        return new Promise((resolve, reject) => {
+
+            if (BGM_NAME !== null) {
+                bgm.src = `mp3/${BGM_NAME}`
+                bgm.load();
+                bgm.play();
+                bgm.onplay = resolve();
+
+            } else {
+                resolve();
+            }
+        })
+    }
+    await loadAudio();
+    console.log(`BGM Start : ${BGM_NAME}`)
 
     getTo();
     // render();

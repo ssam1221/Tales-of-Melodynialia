@@ -45,11 +45,12 @@ class NPC {
     }
 
 
-    constructor(filename) {
+    constructor(filename, options = {}) {
         return new Promise((resolve, reject) => {
             this.canvas = document.getElementById(`mapCanvas`);
             this.container = document.getElementById(`container`);
 
+            this.options = options;
             // this.canvas.classList.add(`npc`)
             this.isShow = true;
             this.currentTimestamp = 0;
@@ -93,6 +94,12 @@ class NPC {
                 // console.log(`Imagefile size : ${this.imgTag.naturalWidth} x ${this.imgTag.naturalHeight}`)
                 this.spriteSize.width = this.imgTag.naturalWidth / 6;
                 this.spriteSize.height = this.imgTag.naturalHeight / 4;
+
+                if (this.options.type === `item`) {
+                    this.spriteSize.width = this.imgTag.naturalWidth;
+                    this.spriteSize.height = this.imgTag.naturalHeight;
+                }
+
                 // this.canvas.width = this.spriteSize.width;
                 // this.canvas.height = this.spriteSize.height;
                 // this.canvas.width = 640;
@@ -217,8 +224,7 @@ class NPC {
         }
 
         this._currentDelay = (this._currentDelay + 1) % this.animationDelay;
-        if (this.img.includes(`Thief1_USM`)) {
-            // console.log(this.direction)
+        if (this.img.includes(`meatball`)) {
         }
 
         if (this._currentDelay === 0) {
