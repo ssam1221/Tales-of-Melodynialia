@@ -17,7 +17,15 @@
     await NPC.setMapImage(`map/Tavern1.png`);
 
     const SCENARIO_TIMESTAMP = [
-        4360, 13090, 21810, 30540,
+        4360,  //  0 Music start 1-1
+        13090, //  1 Music start 1-2
+        21810, //  2 Music start 2-1
+        30540, //  3 Music start 2-2
+        39270, //  4 Music start 3-1
+        56720, //  5 Music start 3-2
+        74180, //  6 Music start 4-1 (Fight Start)
+        91630, //  6 Music start 4-1 (Fighting)
+
     ];
 
     // Set Animate items
@@ -61,6 +69,22 @@
             }
         }));
     }
+
+    // Beer & Alchols & Foods
+    const numOfEachFoods = 2;
+    const FoodList = {
+        Beer: [],
+        Rum: []
+    }
+    for(let i=0; i<numOfEachFoods; i++) {
+        FoodList.Beer.push(await new NPC(`items/beer.png`, {
+            type: `item`
+        }));
+        FoodList.Rum.push(await new NPC(`items/rum.png`, {
+            type: `item`
+        }));
+    }
+    
 
     for await (const staticFile of StaticItemFiles) {
         const foodInstance = await new NPC(`items/${staticFile}`, {
@@ -113,13 +137,6 @@
         const dogFileName = `[Animal]Dog${i%3}_pochi.png`
         AnimalList.dog.push(await new NPC(dogFileName));
         AnimalList.cat.push(await new NPC(`[Animal]Cat_pochi.png`));
-        // AnimalList.chickens.push(await new NPC(`[Animal]Chicken.png`));
-        // AnimalList.horse.push(await new NPC(`[Animal]Horse_pochi.png`));
-
-        // const sheepFilename = i % 2 === 0 ? `[Animal]Sheep-a_pochi.png` : `[Animal]Sheep-b_pochi.png`
-        // AnimalList.sheep.push(await new NPC(sheepFilename));
-        // AnimalList.goat.push(await new NPC(`[Animal]Goat_pochi.png`));
-        // AnimalList.cow.push(await new NPC(`[Animal]Cow_pochi.png`));
     }
 
     // Animate Items
@@ -127,118 +144,150 @@
         x: 99,
         y: 79
     };
-
-    (() => {
-        AnimationItemList[`pot_cooking.png`].setOpacity(0)
-        AnimationItemList[`pot_cooking.png`].fadein(SCENARIO_TIMESTAMP[1]);
-        AnimationItemList[`pot_cooking.png`].setPosition(pot_position.x, pot_position.y);
-        AnimationItemList[`pot_cooking.png`].setAnimationDelay(4);
-
-        for (let i = 0; i < 4; i++) {
-            candles.animate[i].setOpacity(0);
-            candles.animate[i].setAnimationDelay(1);
-            candles.animate[i].setPosition(candlePositionX[i], 67, SCENARIO_TIMESTAMP[0]);
-        }
-        for (const candle of [candles.animate[1], candles.animate[2]]) {
-            candle.fadein(SCENARIO_TIMESTAMP[0]);
-        }
-        // for (let i = 0; i < 4; i++) {
-        //     candles.animate[i].setOpacity(0);
-        //     candles.animate[i].fadein(SCENARIO_TIMESTAMP[0]);
-        //     candles.animate[i].setPosition(candlePositionX[i], 67, SCENARIO_TIMESTAMP[0]);
-        // }
-    })();
-
     // Static Items
     (() => {
         // StaticItemList[`meatball.png`].setStartTime(8000);
 
-        for (let i = 0; i < 4; i++) {
-            candles.static[i].setPosition(candlePositionX[i], 67);
-        }
 
         StaticItemList[`pot.png`].setOpacity(1);
         StaticItemList[`pot.png`].setPosition(pot_position.x, pot_position.y);
-        StaticItemList[`pot.png`].fadeout(SCENARIO_TIMESTAMP[1]);
+
+        AnimationItemList[`pot_cooking.png`].setOpacity(0)
+        AnimationItemList[`pot_cooking.png`].setPosition(pot_position.x, pot_position.y);
+        AnimationItemList[`pot_cooking.png`].setAnimationDelay(4);
+
 
         // StaticItemList[`meatball.png`].setPosition(180, 154);
         // StaticItemList[`steak.png`].setStartTime(1000);
         // StaticItemList[`steak.png`].setPosition(132, 104);
     })();
 
-    // Animals
+    // Initialize sprites
     (() => {
+        // Foods
+        for (const item in FoodList) {
+            for (let i = 0; i < numOfEachFoods; i++) {
+                FoodList[item][i].setOpacity(0);
+            }
+        }
 
-        // AnimalList.dog[0].setPosition(475, 171);
-        // AnimalList.dog[0].setDirection(NPC.DIRECTION.LEFT);
-        // AnimalList.dog[0].setMovingPattern(`h`, -288);
-        // AnimalList.dog[0].setSpeed(12);
+        FoodList.Beer[0].setPosition(32, 100);
+        FoodList.Rum[0].setPosition(192, 100);
 
-        // AnimalList.dog[1].setPosition(34, 340);
-        // AnimalList.dog[1].setDirection(NPC.DIRECTION.DOWN);
-        // AnimalList.dog[1].setMovingPattern(`v`, 120);
-        // AnimalList.dog[1].setSpeed(12);
+
+        // Items
+        for (let i = 0; i < 4; i++) {
+            candles.static[i].setPosition(candlePositionX[i], 67);
+            candles.animate[i].setOpacity(0);
+            candles.animate[i].setAnimationDelay(1);
+        }
+
+        AnimationItemList[`pot_cooking.png`].setOpacity(0)
+        AnimationItemList[`pot_cooking.png`].setPosition(pot_position.x, pot_position.y);
+        AnimationItemList[`pot_cooking.png`].setAnimationDelay(4);
+
+        // NPCs
+        // Tavern Owner
+        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.UP);
+        NPCList[`[Chara]Civilian_Male_A.png`].setMovingPattern(`s`);
+        NPCList[`[Chara]Civilian_Male_A.png`].setAnimationDelay(16);
+        NPCList[`[Chara]Civilian_Male_A.png`].setOpacity(0);
+
+        // Customer 1
+        NPCList[`[Chara]Samurai_USM.png`].setDirection(NPC.DIRECTION.DOWN);
+        NPCList[`[Chara]Samurai_USM.png`].setMovingPattern(`s`);
+        NPCList[`[Chara]Samurai_USM.png`].setAnimationDelay(8);
+        NPCList[`[Chara]Samurai_USM.png`].setOpacity(0);
+        // Customer 2
+        NPCList[`[Chara]Fighter1_USM.png`].setDirection(NPC.DIRECTION.LEFT);
+        NPCList[`[Chara]Fighter1_USM.png`].setMovingPattern(`s`);
+        NPCList[`[Chara]Fighter1_USM.png`].setAnimationDelay(8);
+        NPCList[`[Chara]Fighter1_USM.png`].setOpacity(0);
 
         AnimalList.cat[0].setDirection(NPC.DIRECTION.UP);
         AnimalList.cat[0].setMovingPattern(`s`);
         AnimalList.cat[0].setAnimationDelay(10);
         AnimalList.cat[0].setOpacity(0);
 
+    })();
+
+    // Animation order by timestamp
+    // SCENARIO_TIMESTAMP[0]
+    (() => {
+
+        // Initialize candles
+        for (let i = 0; i < 4; i++) {
+            candles.animate[i].setPosition(candlePositionX[i], 67, SCENARIO_TIMESTAMP[0]);
+        }
+
+        // Turn on 1/2 candle
+        for (const candle of [candles.animate[1], candles.animate[2]]) {
+            candle.fadein(SCENARIO_TIMESTAMP[0]);
+        }
+
         AnimalList.cat[0].fadein(SCENARIO_TIMESTAMP[0]);
         AnimalList.cat[0].setPosition(120, 98, SCENARIO_TIMESTAMP[0]);
 
-        AnimalList.cat[0].fadeout(8000);
-        AnimalList.cat[0].setDirection(NPC.DIRECTION.LEFT, 9000);
-        AnimalList.cat[0].fadein(9001);
-        AnimalList.cat[0].setPosition(100, 110, 9000);
-
-        AnimalList.cat[0].fadeout(11000);
-        AnimalList.cat[0].setDirection(NPC.DIRECTION.DOWN, 13000);
-        AnimalList.cat[0].fadein(13001);
-        AnimalList.cat[0].setPosition(83, 79, 13000);
-
-
-        // AnimalList.cat[1].setPosition(450, 93);
-        // AnimalList.cat[1].setDirection(NPC.DIRECTION.DOWN);
-        // AnimalList.cat[1].setMovingPattern(`v`, 39);
-        // AnimalList.cat[1].setSpeed(3);
+        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(132, 88, SCENARIO_TIMESTAMP[0]);
+        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[0]);
     })();
 
+    // SCENARIO_TIMESTAMP[0] ~ [1]
+    (() => {
+        // Move cat
+        AnimalList.cat[0].fadeout(SCENARIO_TIMESTAMP[1] - 6000);
+        AnimalList.cat[0].setDirection(NPC.DIRECTION.LEFT, SCENARIO_TIMESTAMP[1] - 5000);
+        AnimalList.cat[0].fadein(SCENARIO_TIMESTAMP[1] - 5000 + 1);
+        AnimalList.cat[0].setPosition(100, 110, SCENARIO_TIMESTAMP[1] - 5000);
+    })();
+
+    // SCENARIO_TIMESTAMP[1]
+    (() => {
+        // Cooking in pot
+        StaticItemList[`pot.png`].fadeout(SCENARIO_TIMESTAMP[1]);
+        AnimationItemList[`pot_cooking.png`].fadein(SCENARIO_TIMESTAMP[1]);
+
+        // Move cat
+        AnimalList.cat[0].fadeout(SCENARIO_TIMESTAMP[1] - 1000);
+        AnimalList.cat[0].setDirection(NPC.DIRECTION.DOWN, SCENARIO_TIMESTAMP[1]);
+        AnimalList.cat[0].fadein(SCENARIO_TIMESTAMP[1] + 1);
+        AnimalList.cat[0].setPosition(83, 79, SCENARIO_TIMESTAMP[1]);
+
+        // Move owner
+        NPCList[`[Chara]Civilian_Male_A.png`].fadeout(SCENARIO_TIMESTAMP[1] - 1000);
+        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(100, 88, SCENARIO_TIMESTAMP[1]);
+        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[1]);
+    })();
+
+    // SCENARIO_TIMESTAMP[2]
+    (() => {
+
+        FoodList.Beer[0].fadein(SCENARIO_TIMESTAMP[2])
+        FoodList.Rum[0].fadein(SCENARIO_TIMESTAMP[2])
+
+        NPCList[`[Chara]Samurai_USM.png`].setPosition(33, 85, SCENARIO_TIMESTAMP[2]);
+        NPCList[`[Chara]Samurai_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
+
+        NPCList[`[Chara]Fighter1_USM.png`].setPosition(206, 100, SCENARIO_TIMESTAMP[2]);
+        NPCList[`[Chara]Fighter1_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
+    })();
+
+
+    // SCENARIO_TIMESTAMP[3]
+    (() => {
+        // Turn on 0/3 candle
+        for (const candle of [candles.animate[0], candles.animate[3]]) {
+            candle.fadein(SCENARIO_TIMESTAMP[3]);
+        }
+    })();
     // NPCs
     (() => {
 
         // Tavern Owner 
         // NPCList[`[Chara]Civilian_Male_A.png`].setStartTime(SCENARIO_TIMESTAMP[0]);
 
-        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.UP);
-        NPCList[`[Chara]Civilian_Male_A.png`].setMovingPattern(`s`);
-        NPCList[`[Chara]Civilian_Male_A.png`].setAnimationDelay(16);
-        NPCList[`[Chara]Civilian_Male_A.png`].setOpacity(0);
-
-        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(132, 88, SCENARIO_TIMESTAMP[0]);
-        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[0]);
-
-        NPCList[`[Chara]Civilian_Male_A.png`].fadeout(SCENARIO_TIMESTAMP[1] - 1000);
-        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(100, 88, SCENARIO_TIMESTAMP[1]);
-        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[1]);
 
 
-        NPCList[`[Chara]Samurai_USM.png`].setDirection(NPC.DIRECTION.DOWN);
-        NPCList[`[Chara]Samurai_USM.png`].setMovingPattern(`s`);
-        NPCList[`[Chara]Samurai_USM.png`].setAnimationDelay(8);
-        NPCList[`[Chara]Samurai_USM.png`].setOpacity(0);
-
-        NPCList[`[Chara]Samurai_USM.png`].setPosition(33, 85, SCENARIO_TIMESTAMP[2]);
-        NPCList[`[Chara]Samurai_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
-
-
-        NPCList[`[Chara]Fighter1_USM.png`].setDirection(NPC.DIRECTION.LEFT);
-        NPCList[`[Chara]Fighter1_USM.png`].setMovingPattern(`s`);
-        NPCList[`[Chara]Fighter1_USM.png`].setAnimationDelay(8);
-        NPCList[`[Chara]Fighter1_USM.png`].setOpacity(0);
-
-        NPCList[`[Chara]Fighter1_USM.png`].setPosition(206, 100, SCENARIO_TIMESTAMP[2]);
-        NPCList[`[Chara]Fighter1_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
 
         // NPCList[`[Chara]Samurai_USM.png`].setPosition(46, 120, 21810);
         // NPCList[`[Chara]Civilian_Male_A.png`].fadein(21810);
@@ -491,12 +540,12 @@
     await loadAudio();
     blackOverlay.style.opacity = 1;
     setTimeout(() => {
-        fadeInBlackOverlay(0.2);
-        // fadeInBlackOverlay(0.7);
+        // fadeInBlackOverlay(0.2);
+        fadeInBlackOverlay(0.7);
     }, 1360);
     setTimeout(() => {
         fadeInBlackOverlay(0.5);
-    }, 21810);
+    }, SCENARIO_TIMESTAMP[2]);
     console.log(`BGM Start : ${BGM_NAME}`);
 
     getTo();
