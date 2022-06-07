@@ -23,7 +23,7 @@ let startTimestamp = 0;
 class NPC {
     // size : 16 x 16
 
-    static ctx;
+    static ctx = null;
 
     static DIRECTION = SPRITE_DIRECTION;
 
@@ -44,7 +44,6 @@ class NPC {
         });
     }
 
-
     constructor(filename, options = {}) {
         return new Promise((resolve, reject) => {
             this.canvas = document.getElementById(`mapCanvas`);
@@ -54,16 +53,30 @@ class NPC {
             // this.canvas.classList.add(`npc`)
             this.isShow = true;
             this.currentTimestamp = 0;
+
+            this.currentEvent = ``;
+            this.timestampEvent = []; // {event, timestamp}
+            this.timestampEventIndex = 0;
             this.showTimestamp = 0;
             this.opacity = 1;
+
+
             this.ctx = this.canvas.getContext(`2d`);
 
 
-            this.canvas.width = 320 * zoomRatio;
-            this.canvas.height = 320 * zoomRatio;
-            this.canvas.imageSmoothingEnabled = false;
+            this.canvas.width = 640;
+            this.canvas.height = 640;
 
-            NPC.ctx = this.ctx;
+            // this.canvas.width = ScreenSize.x * zoomRatio;
+            // this.canvas.height = ScreenSize.y * zoomRatio;
+            this.canvas.imageSmoothingEnabled = false;
+            if (NPC.ctx === null) {
+                NPC.ctx = this.ctx;
+            }
+
+            this.positionList = []; // {x, y, timestamp}
+            this.currentPositionListIndex = 0;
+            this.currentPositionRenderingIndex = 0;
             this.pattern = `n`;
             this.distance = 0;
             this.direction = ``;
@@ -92,12 +105,19 @@ class NPC {
             this.imgTag.src = this.img;
             this.imgTag.onload = () => {
                 // console.log(`Imagefile size : ${this.imgTag.naturalWidth} x ${this.imgTag.naturalHeight}`)
-                this.spriteSize.width = this.imgTag.naturalWidth / 6;
-                this.spriteSize.height = this.imgTag.naturalHeight / 4;
 
                 if (this.options.type === `item`) {
                     this.spriteSize.width = this.imgTag.naturalWidth;
                     this.spriteSize.height = this.imgTag.naturalHeight;
+                    // this.setMovingPattern(`s`);
+                } else if (this.options.type === `animateItem`) {
+                    this.spriteSize.width = this.imgTag.naturalWidth / this.options.sprite.col;
+                    this.spriteSize.height = this.imgTag.naturalHeight / this.options.sprite.row;
+                    this.setMovingPattern(`s`);
+                } else {
+                    // Default NPC images
+                    this.spriteSize.width = this.imgTag.naturalWidth / 6;
+                    this.spriteSize.height = this.imgTag.naturalHeight / 4;
                 }
 
                 // this.canvas.width = this.spriteSize.width;
@@ -105,8 +125,8 @@ class NPC {
                 // this.canvas.width = 640;
                 // this.canvas.height = 640;
                 // console.log(`Each sprite size : ${this.spriteSize.width} x ${this.spriteSize.height}`)
-                this.ctx.drawImage(this.imgTag, 0, 0, this.spriteSize.width, this.spriteSize.height,
-                    this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio, this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
+                // this.ctx.drawImage(this.imgTag, 0, 0, this.spriteSize.width, this.spriteSize.height,
+                //     this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio, this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
                 // console.log(`Draw NPC to canvas`);
                 this.container.appendChild(this.canvas);
                 NPCList.push(this);
@@ -127,28 +147,68 @@ class NPC {
         this.isShow = false;
     }
 
+    _eventSort() {
+        this.timestampEvent.sort((a, b) => {
+            return a.timestamp - b.timestamp;
+        });
+    }
+
+    fadein(timestamp) {
+        this.timestampEvent.push({
+            event: `fadein`,
+            timestamp
+        });
+    }
+
+    fadeout(timestamp) {
+        this.timestampEvent.push({
+            event: `fadeout`,
+            timestamp
+        });
+    }
+
+    setStartVisible(visible = true) {
+        if (visible === true) {
+            this.opacity = 1;
+            this.isShow = true;
+        } else {
+            this.opacity = 0;
+            this.isShow = false;
+        }
+    }
+
+    setOpacity(opacity) {
+        this.opacity = opacity;
+    }
+
     setStartTime(timestamp) {
+        this.timestampEvent.push({
+            event: `show`,
+            timestamp: timestamp
+        });
         this.showTimestamp = timestamp;
         this.opacity = 0;
     }
 
-    setDirection(direction) {
-        this.direction = direction;
+    setDirection(direction, timestamp = 0) {
+        this.timestampEvent.push({
+            event: `setDirection`,
+            direction: direction,
+            timestamp: timestamp
+        });
+        if (timestamp === 0) {
+            this.direction = direction;
+        }
+
     }
 
-    setPosition(x, y) {
+    setPosition(x, y, timestamp = 0) {
+        this.positionList.push({
+            x,
+            y,
+            timestamp
+        });
         this.used = true;
-        // console.log(`Set position to [${x} x ${y}]`)
-        // this.canvas.style.left = `${x}px`;
-        // this.canvas.style.top = `${y}px`;
-        this.originalPosition.x = x;
-        this.originalPosition.y = y;
-        this.renderPosition.x = x;
-        this.renderPosition.y = y;
-        this.ctx.drawImage(this.imgTag, 0, 0,
-            this.spriteSize.width, this.spriteSize.height,
-            this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
-            this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
     }
 
     setMovingPattern(pattern, distance) {
@@ -192,21 +252,19 @@ class NPC {
 
     static animate() {
         startTimestamp = new Date().getTime();
+
+        for (const instance of NPCList) {
+            instance._eventSort();
+        }
+
         setInterval(() => {
             this.ctx.imageSmoothingEnabled = false;
-            this.ctx.clearRect(0, 0, 320 * zoomRatio, 320 * zoomRatio);
-            this.ctx.drawImage(this.mapImage, 0, 0, 320 * zoomRatio, 320 * zoomRatio);
+            this.ctx.clearRect(0, 0, 240 * zoomRatio, 240 * zoomRatio);
+            this.ctx.drawImage(this.mapImage, 0, 0, 240 * zoomRatio, 240 * zoomRatio);
             for (const instance of NPCList) {
                 // console.log(`Render : `, instance.img)
                 instance.timestamp = new Date().getTime() - startTimestamp;
                 if (instance.timestamp > instance.showTimestamp) {
-                    instance.isShow = true;
-                    if (instance.opacity < 1) {
-                        instance.opacity += 0.1;
-                    }
-                    if (instance.opacity > 1) {
-                        instance.opacity = 1;
-                    }
                     instance.renderFrame();
                 }
             }
@@ -217,15 +275,19 @@ class NPC {
         // console.log(`Rendering ${this.img}...`);
         // this.ctx.clearRect(0, 0, this.spriteSize.width, this.spriteSize.height);
         // console.log(`Animation start`)
-
         if (this.used === false ||
             this.isShow === false) {
+            if (this.img.includes(`pot_cooking.png`)) {
+                console.log(this.used, this.isShow)
+                console.log(this.opacity)
+
+                console.log(`NO SHOW`)
+            }
             return;
         }
 
         this._currentDelay = (this._currentDelay + 1) % this.animationDelay;
-        if (this.img.includes(`meatball`)) {
-        }
+        if (this.img.includes(`meatball`)) {}
 
         if (this._currentDelay === 0) {
             if (this.distance === 0) {}
@@ -296,9 +358,63 @@ class NPC {
                 }
             }
         }
+        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Position related
+        if (this.positionList[this.currentPositionListIndex] &&
+            this.positionList[this.currentPositionListIndex].timestamp <= this.timestamp) {
+            // if (this.img.includes(`Male_A`)) {
+            //     console.log(`[${this.timestamp}] Render : `, this.currentPositionListIndex)
+            // }
+            // this.currentPositionRenderingIndex = this.currentPositionListIndex
+            const positionInfo = this.positionList[this.currentPositionListIndex];
+            this.originalPosition.x = positionInfo.x;
+            this.originalPosition.y = positionInfo.y;
+            this.renderPosition.x = positionInfo.x;
+            this.renderPosition.y = positionInfo.y;
+
+            if ((this.positionList[this.currentPositionListIndex + 1] &&
+                    this.positionList[this.currentPositionListIndex + 1].timestamp <= this.timestamp) &&
+                (this.positionList.length - 1 > this.currentPositionListIndex)) {
+                this.currentPositionListIndex++;
+            }
+        }
+
+        // Event related
+        if (this.timestampEvent[this.timestampEventIndex] &&
+            this.timestampEvent[this.timestampEventIndex].timestamp <= this.timestamp) {
+            // if (this.img.includes(`Male_A`)) {
+            //     console.log(`[${this.timestamp}] Event : `, this.timestampEvent[this.timestampEventIndex])
+            //     console.log(this.opacity)
+            // }
+            this.currentEvent = this.timestampEvent[this.timestampEventIndex];
+
+            switch (this.currentEvent.event) {
+                case `fadein`:
+                    this.opacity += 0.1;
+                    if (this.opacity >= 1) {
+                        this.opacity = 1;
+                    }
+                    break;
+                case `fadeout`:
+                    this.opacity -= 0.1;
+                    if (this.opacity <= 0) {
+                        this.opacity = 0;
+                    }
+                    break;
+                case `setDirection`: {
+                    this.direction = this.currentEvent.direction;
+                }
+            }
+
+            if (this.timestampEvent[this.timestampEventIndex + 1] &&
+                this.timestampEvent[this.timestampEventIndex + 1].timestamp <= this.timestamp) {
+                this.timestampEventIndex++;
+            }
+        }
+
         this.ctx.save();
         this.ctx.globalAlpha = this.opacity;
-        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.drawImage(this.imgTag,
             this.spriteSize.width * SPRITE_ORDER[this.spriteImageIndex], this.spriteSize.height * this.direction,
             this.spriteSize.width, this.spriteSize.height,

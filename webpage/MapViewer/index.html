@@ -8,11 +8,15 @@
             border: 0
         }
 
-        div#container {
+        div#container, div#blackOverlay {
             position: absolute;
             margin: 50px;
             width: 640px;
             height: 640px;
+        }
+        div#blackOverlay {
+            position: absolute;
+            background-color: black;
         }
 
         img#map {
@@ -60,12 +64,21 @@
 
         div#timer {
             font-family: 'Courier New', Courier, monospace;
+            position: absolute;
+            top: 30px;
+            right: 250px;
         }
 
         .npc {
             position: absolute;
             left: 0px;
             top: 0px;
+        }
+
+        audio {
+            position: absolute;
+            top: 50px;
+            right: 50px;
         }
     </style>
     <script src="npc.js"> </script>
@@ -86,10 +99,12 @@
         <canvas id="canvasRender"></canvas>
     </div>
 
+    <div id="blackOverlay"></div>
+
     <div id="test">
         <!-- <img id="testImg"> -->
     </div>
-    <audio id="bgm"></audio>
+    <audio id="bgm" controls></audio>
 </body>
 
 

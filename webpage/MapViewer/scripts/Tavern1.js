@@ -10,22 +10,63 @@
     // const canvasContainer = document.getElementById(`canvasContainer`);
     const canvasRender = document.getElementById(`canvasRender`);
     const mapCanvas = document.getElementById(`mapCanvas`);
+    const blackOverlay = document.getElementById(`blackOverlay`);
 
-    NPC.zoom(2);
+    // NPC.zoom(2);
+    NPC.zoom(640 / 240);
     await NPC.setMapImage(`map/Tavern1.png`);
 
-    const FoodFiles = [
-        `meatball.png`,
-        `steak.png`
-    ]
-    const FoodList = {};
+    const SCENARIO_TIMESTAMP = [
+        4360, 13090, 21810, 30540,
+    ];
 
-    // Set Foods
-    for await (const foodFile of FoodFiles) {
-        const foodInstance = await new NPC(`items/${foodFile}`, {
+    // Set Animate items
+    const AnimationItemList = {};
+    const AnimationItemFiles = [
+        `pot_cooking.png`
+    ]
+    for await (const animationItemFile of AnimationItemFiles) {
+        const itemInstance = await new NPC(`item_animate/${animationItemFile}`, {
+            type: `animateItem`,
+            sprite: {
+                row: 1,
+                col: 3
+            }
+        });
+        AnimationItemList[animationItemFile] = itemInstance;
+    }
+
+    // Set static items
+    const StaticItemList = {};
+    const StaticItemFiles = [
+        `pot.png`,
+        // `meatball.png`,
+        // `steak.png`
+    ]
+
+    const candles = {
+        static: [],
+        animate: []
+    }
+    const candlePositionX = [21, 43, 180, 202]
+    for (let i = 0; i < 4; i++) {
+        candles.static.push(await new NPC(`items/candle.png`, {
+            type: `item`
+        }));
+        candles.animate.push(await new NPC(`item_animate/candle_fire.png`, {
+            type: `animateItem`,
+            sprite: {
+                row: 1,
+                col: 3
+            }
+        }));
+    }
+
+    for await (const staticFile of StaticItemFiles) {
+        const foodInstance = await new NPC(`items/${staticFile}`, {
             type: `item`
         });
-        FoodList[foodFile] = foodInstance;
+        StaticItemList[staticFile] = foodInstance;
     }
 
     const NPCFiles = [
@@ -35,9 +76,9 @@
         `[Chara]Civilian_Male_A.png`,
         // `[Chara]Civilian_Male_B.png`,
         // `[Chara]Civilian_Male_C.png`,
-        // `[Chara]Fighter1_USM.png`,
-        // `[Chara]Fighter2_USM.png`,
-        // `[Chara]Fighter3_USM.png`,
+        `[Chara]Fighter1_USM.png`,
+        `[Chara]Fighter2_USM.png`,
+        `[Chara]Fighter3_USM.png`,
         // `[Chara]Girl1_USM.png`,
         // `[Chara]Hero1_USM.png`,
         // `[Chara]Hero2_USM.png`,
@@ -68,7 +109,7 @@
         goat: [],
         cow: [],
     }
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 1; i++) {
         const dogFileName = `[Animal]Dog${i%3}_pochi.png`
         AnimalList.dog.push(await new NPC(dogFileName));
         AnimalList.cat.push(await new NPC(`[Animal]Cat_pochi.png`));
@@ -81,13 +122,48 @@
         // AnimalList.cow.push(await new NPC(`[Animal]Cow_pochi.png`));
     }
 
-    // Foods
+    // Animate Items
+    const pot_position = {
+        x: 99,
+        y: 79
+    };
 
     (() => {
-        FoodList[`meatball.png`].setStartTime(8000);
-        FoodList[`meatball.png`].setPosition(180, 154);
-        // FoodList[`steak.png`].setStartTime(1000);
-        // FoodList[`steak.png`].setPosition(132, 104);
+        AnimationItemList[`pot_cooking.png`].setOpacity(0)
+        AnimationItemList[`pot_cooking.png`].fadein(SCENARIO_TIMESTAMP[1]);
+        AnimationItemList[`pot_cooking.png`].setPosition(pot_position.x, pot_position.y);
+        AnimationItemList[`pot_cooking.png`].setAnimationDelay(4);
+
+        for (let i = 0; i < 4; i++) {
+            candles.animate[i].setOpacity(0);
+            candles.animate[i].setAnimationDelay(1);
+            candles.animate[i].setPosition(candlePositionX[i], 67, SCENARIO_TIMESTAMP[0]);
+        }
+        for (const candle of [candles.animate[1], candles.animate[2]]) {
+            candle.fadein(SCENARIO_TIMESTAMP[0]);
+        }
+        // for (let i = 0; i < 4; i++) {
+        //     candles.animate[i].setOpacity(0);
+        //     candles.animate[i].fadein(SCENARIO_TIMESTAMP[0]);
+        //     candles.animate[i].setPosition(candlePositionX[i], 67, SCENARIO_TIMESTAMP[0]);
+        // }
+    })();
+
+    // Static Items
+    (() => {
+        // StaticItemList[`meatball.png`].setStartTime(8000);
+
+        for (let i = 0; i < 4; i++) {
+            candles.static[i].setPosition(candlePositionX[i], 67);
+        }
+
+        StaticItemList[`pot.png`].setOpacity(1);
+        StaticItemList[`pot.png`].setPosition(pot_position.x, pot_position.y);
+        StaticItemList[`pot.png`].fadeout(SCENARIO_TIMESTAMP[1]);
+
+        // StaticItemList[`meatball.png`].setPosition(180, 154);
+        // StaticItemList[`steak.png`].setStartTime(1000);
+        // StaticItemList[`steak.png`].setPosition(132, 104);
     })();
 
     // Animals
@@ -103,10 +179,24 @@
         // AnimalList.dog[1].setMovingPattern(`v`, 120);
         // AnimalList.dog[1].setSpeed(12);
 
-        AnimalList.cat[0].setPosition(20, 120);
-        AnimalList.cat[0].setDirection(NPC.DIRECTION.DOWN);
-        AnimalList.cat[0].setMovingPattern(`s`, 208);
-        AnimalList.cat[0].setAnimationDelay(16);
+        AnimalList.cat[0].setDirection(NPC.DIRECTION.UP);
+        AnimalList.cat[0].setMovingPattern(`s`);
+        AnimalList.cat[0].setAnimationDelay(10);
+        AnimalList.cat[0].setOpacity(0);
+
+        AnimalList.cat[0].fadein(SCENARIO_TIMESTAMP[0]);
+        AnimalList.cat[0].setPosition(120, 98, SCENARIO_TIMESTAMP[0]);
+
+        AnimalList.cat[0].fadeout(8000);
+        AnimalList.cat[0].setDirection(NPC.DIRECTION.LEFT, 9000);
+        AnimalList.cat[0].fadein(9001);
+        AnimalList.cat[0].setPosition(100, 110, 9000);
+
+        AnimalList.cat[0].fadeout(11000);
+        AnimalList.cat[0].setDirection(NPC.DIRECTION.DOWN, 13000);
+        AnimalList.cat[0].fadein(13001);
+        AnimalList.cat[0].setPosition(83, 79, 13000);
+
 
         // AnimalList.cat[1].setPosition(450, 93);
         // AnimalList.cat[1].setDirection(NPC.DIRECTION.DOWN);
@@ -117,26 +207,51 @@
     // NPCs
     (() => {
 
-        NPCList[`[Chara]Samurai_USM.png`].setStartTime(1000);
-        NPCList[`[Chara]Samurai_USM.png`].setPosition(46, 120);
-        NPCList[`[Chara]Samurai_USM.png`].setMovingPattern(`s`, 0);
+        // Tavern Owner 
+        // NPCList[`[Chara]Civilian_Male_A.png`].setStartTime(SCENARIO_TIMESTAMP[0]);
+
+        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.UP);
+        NPCList[`[Chara]Civilian_Male_A.png`].setMovingPattern(`s`);
+        NPCList[`[Chara]Civilian_Male_A.png`].setAnimationDelay(16);
+        NPCList[`[Chara]Civilian_Male_A.png`].setOpacity(0);
+
+        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(132, 88, SCENARIO_TIMESTAMP[0]);
+        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[0]);
+
+        NPCList[`[Chara]Civilian_Male_A.png`].fadeout(SCENARIO_TIMESTAMP[1] - 1000);
+        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(100, 88, SCENARIO_TIMESTAMP[1]);
+        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[1]);
+
+
+        NPCList[`[Chara]Samurai_USM.png`].setDirection(NPC.DIRECTION.DOWN);
+        NPCList[`[Chara]Samurai_USM.png`].setMovingPattern(`s`);
         NPCList[`[Chara]Samurai_USM.png`].setAnimationDelay(8);
+        NPCList[`[Chara]Samurai_USM.png`].setOpacity(0);
+
+        NPCList[`[Chara]Samurai_USM.png`].setPosition(33, 85, SCENARIO_TIMESTAMP[2]);
+        NPCList[`[Chara]Samurai_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
+
+
+        NPCList[`[Chara]Fighter1_USM.png`].setDirection(NPC.DIRECTION.LEFT);
+        NPCList[`[Chara]Fighter1_USM.png`].setMovingPattern(`s`);
+        NPCList[`[Chara]Fighter1_USM.png`].setAnimationDelay(8);
+        NPCList[`[Chara]Fighter1_USM.png`].setOpacity(0);
+
+        NPCList[`[Chara]Fighter1_USM.png`].setPosition(206, 100, SCENARIO_TIMESTAMP[2]);
+        NPCList[`[Chara]Fighter1_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
+
+        // NPCList[`[Chara]Samurai_USM.png`].setPosition(46, 120, 21810);
+        // NPCList[`[Chara]Civilian_Male_A.png`].fadein(21810);
 
         // NPCList[`[Chara]Fighter1_USM.png`].setPosition(56, 592);
         // NPCList[`[Chara]Fighter1_USM.png`].setDirection(NPC.DIRECTION.UP);
-        // NPCList[`[Chara]Fighter1_USM.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Fighter1_USM.png`].setMovingPattern(`s`);
         // NPCList[`[Chara]Fighter1_USM.png`].setAnimationDelay(2);
 
         // NPCList[`[Chara]Fighter3_USM.png`].setPosition(298, 573);
         // NPCList[`[Chara]Fighter3_USM.png`].setDirection(NPC.DIRECTION.RIGHT);
-        // NPCList[`[Chara]Fighter3_USM.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Fighter3_USM.png`].setMovingPattern(`s`);
         // NPCList[`[Chara]Fighter3_USM.png`].setAnimationDelay(8);
-
-        NPCList[`[Chara]Civilian_Male_A.png`].setStartTime(4360);
-        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(180, 120);
-        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.UP);
-        NPCList[`[Chara]Civilian_Male_A.png`].setMovingPattern(`s`);
-        NPCList[`[Chara]Civilian_Male_A.png`].setAnimationDelay(16);
 
         // NPCList[`[Chara]Girl1_USM.png`].setPosition(190, 436);
         // NPCList[`[Chara]Girl1_USM.png`].setMovingPattern(`s`);
@@ -178,7 +293,7 @@
         // // Farmer
         // NPCList[`[Chara]Civilian_Male_B.png`].setPosition(256, 346);
         // NPCList[`[Chara]Civilian_Male_B.png`].setAnimationDelay(6);
-        // NPCList[`[Chara]Civilian_Male_B.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Civilian_Male_B.png`].setMovingPattern(`s`);
 
         // NPCList[`[Chara]Civilian_Male_C.png`].setPosition(587, 543);
         // NPCList[`[Chara]Civilian_Male_C.png`].setMovingPattern(`v`, -270);
@@ -186,23 +301,23 @@
 
         // NPCList[`[Chara]Civilian_Female_A.png`].setPosition(448, 452);
         // NPCList[`[Chara]Civilian_Female_A.png`].setDirection(NPC.DIRECTION.RIGHT);
-        // NPCList[`[Chara]Civilian_Female_A.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Civilian_Female_A.png`].setMovingPattern(`s`);
         // NPCList[`[Chara]Civilian_Female_A.png`].setAnimationDelay(8);
 
         // NPCList[`[Chara]Civilian_Female_B.png`].setPosition(464, 452);
         // NPCList[`[Chara]Civilian_Female_B.png`].setDirection(NPC.DIRECTION.LEFT);
-        // NPCList[`[Chara]Civilian_Female_B.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Civilian_Female_B.png`].setMovingPattern(`s`);
         // NPCList[`[Chara]Civilian_Female_B.png`].setAnimationDelay(8);
 
         // NPCList[`[Chara]Civilian_Female_C.png`].setPosition(288, 538);
         // NPCList[`[Chara]Civilian_Female_C.png`].setDirection(NPC.DIRECTION.UP);
-        // NPCList[`[Chara]Civilian_Female_C.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Civilian_Female_C.png`].setMovingPattern(`s`);
         // NPCList[`[Chara]Civilian_Female_C.png`].setAnimationDelay(8);
 
         // NPCList[`[Chara]Thief1_USM.png`].setPosition(76, 367);
         // NPCList[`[Chara]Thief1_USM.png`].setAnimationDelay(8);
         // NPCList[`[Chara]Thief1_USM.png`].setDirection(NPC.DIRECTION.RIGHT);
-        // NPCList[`[Chara]Thief1_USM.png`].setMovingPattern(`s`, 0);
+        // NPCList[`[Chara]Thief1_USM.png`].setMovingPattern(`s`);
 
         // NPCList[`[Chara]Priest1_USM.png`].setPosition(540, 154);
         // NPCList[`[Chara]Priest1_USM.png`].setMovingPattern(`v`, 116);
@@ -335,6 +450,26 @@
             `${diff.getMilliseconds().toString().padStart(3, `0`)}`;
     }
 
+    function fadeInBlackOverlay(targetOpacity = 0) {
+        if (blackOverlay.style.opacity === ``) {}
+        const fadeOutBlackOverlayInterval = setInterval(() => {
+            if (blackOverlay.style.opacity <= targetOpacity) {
+                clearInterval(fadeOutBlackOverlayInterval);
+            }
+            blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) - 0.02;
+        }, 30);
+    }
+
+    function fadeOutBlackOverlay() {
+        // blackOverlay.style.opacity = 0;
+        const fadeOutBlackOverlayInterval = setInterval(() => {
+            if (blackOverlay.style.opacity >= 1) {
+                clearInterval(fadeOutBlackOverlayInterval);
+            }
+            blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) + 0.02;
+        }, 30);
+    }
+
     async function loadAudio() {
         return new Promise((resolve, reject) => {
 
@@ -342,7 +477,11 @@
                 bgm.src = `mp3/${BGM_NAME}`
                 bgm.load();
                 bgm.play();
-                bgm.onplay = resolve();
+                bgm.onplay = (() => {
+                    setInterval(startTimer, 10);
+                    resolve();
+                });
+                bgm.onended = fadeOutBlackOverlay;
 
             } else {
                 resolve();
@@ -350,11 +489,18 @@
         })
     }
     await loadAudio();
-    console.log(`BGM Start : ${BGM_NAME}`)
+    blackOverlay.style.opacity = 1;
+    setTimeout(() => {
+        fadeInBlackOverlay(0.2);
+        // fadeInBlackOverlay(0.7);
+    }, 1360);
+    setTimeout(() => {
+        fadeInBlackOverlay(0.5);
+    }, 21810);
+    console.log(`BGM Start : ${BGM_NAME}`);
 
     getTo();
     // render();
-    setInterval(startTimer, 10);
 
 
 })();
