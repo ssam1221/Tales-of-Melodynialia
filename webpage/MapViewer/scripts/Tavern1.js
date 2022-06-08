@@ -17,15 +17,20 @@
     await NPC.setMapImage(`map/Tavern1.png`);
 
     const SCENARIO_TIMESTAMP = [
-        4360,  //  0 Music start 1-1
-        13090, //  1 Music start 1-2
-        21810, //  2 Music start 2-1
-        30540, //  3 Music start 2-2
-        39270, //  4 Music start 3-1
-        56720, //  5 Music start 3-2
-        74180, //  6 Music start 4-1 (Fight Start)
-        91630, //  6 Music start 4-1 (Fighting)
-
+        4360, ////   0 Music start 1-1
+        13090, ///   1 Music start 1-2
+        21810, ///   2 Music start 2-1
+        30540, ///   3 Music start 2-2
+        39270, ///   4 Music start 3-1
+        56720, ///   5 Music start 3-2
+        74180, ///   6 Music start 4-1 (Fight Start)
+        91630, ///   7 Music start 4-2 (Fighting)
+        109090, //   8 Music start 1a-1
+        115781, //   9 Music start 1a-1/2
+        120654, //  10 Music start 1a-2
+        144000, //  11 Music start 2a-1
+        161450, //  12 Music start 2a-2
+        158900, //  13 Music End
     ];
 
     // Set Animate items
@@ -52,12 +57,21 @@
         // `steak.png`
     ]
 
+    const lights = {};
+
     const candles = {
         static: [],
         animate: []
     }
     const candlePositionX = [21, 43, 180, 202]
     for (let i = 0; i < 4; i++) {
+        lights[`candle${i}`] = (await new NPC(`item_animate/light.png`, {
+            type: `animateItem`,
+            sprite: {
+                row: 1,
+                col: 3
+            }
+        }));
         candles.static.push(await new NPC(`items/candle.png`, {
             type: `item`
         }));
@@ -71,20 +85,35 @@
     }
 
     // Beer & Alchols & Foods
+    const TablePosition = [{
+            x: 32,
+            y: 104
+        },
+        {
+            x: 192,
+            y: 100
+        },
+    ]
     const numOfEachFoods = 2;
     const FoodList = {
         Beer: [],
-        Rum: []
+        Rum: [],
+        Empty_dish: [],
+        Soup: [],
+        Meatball: [],
+        Steak: [],
+        Fish: [],
+        Omelet: [],
+        Cake: [],
     }
-    for(let i=0; i<numOfEachFoods; i++) {
-        FoodList.Beer.push(await new NPC(`items/beer.png`, {
-            type: `item`
-        }));
-        FoodList.Rum.push(await new NPC(`items/rum.png`, {
-            type: `item`
-        }));
+    for (let i = 0; i < numOfEachFoods; i++) {
+        for (const food in FoodList) {
+            FoodList[food].push(await new NPC(`items/${food.toLowerCase()}.png`, {
+                type: `item`
+            }));
+        }
     }
-    
+
 
     for await (const staticFile of StaticItemFiles) {
         const foodInstance = await new NPC(`items/${staticFile}`, {
@@ -92,9 +121,17 @@
         });
         StaticItemList[staticFile] = foodInstance;
     }
+    lights[`pot`] = (await new NPC(`item_animate/light.png`, {
+        type: `animateItem`,
+        sprite: {
+            row: 1,
+            col: 3
+        }
+    }));
 
     const NPCFiles = [
-        // `[Chara]Civilian_Female_A.png`,
+
+        `[Chara]Civilian_Female_A.png`, // Owner Wife
         // `[Chara]Civilian_Female_B.png`,
         // `[Chara]Civilian_Female_C.png`,
         `[Chara]Civilian_Male_A.png`,
@@ -148,6 +185,9 @@
     (() => {
         // StaticItemList[`meatball.png`].setStartTime(8000);
 
+        for (const item in StaticItemList) {
+            StaticItemList[item].setOpacity(0);
+        }
 
         StaticItemList[`pot.png`].setOpacity(1);
         StaticItemList[`pot.png`].setPosition(pot_position.x, pot_position.y);
@@ -171,18 +211,26 @@
             }
         }
 
-        FoodList.Beer[0].setPosition(32, 100);
-        FoodList.Rum[0].setPosition(192, 100);
+        // FoodList.Beer[0].setPosition(TablePosition.x, TablePosition.y);
+        FoodList.Soup[0].setPosition(TablePosition[0].x, TablePosition[0].y);
+        FoodList.Empty_dish[0].setPosition(TablePosition[0].x, TablePosition[0].y);
+        FoodList.Rum[0].setPosition(TablePosition[1].x, TablePosition[1].y);
 
+        // Lights
+        for (const key in lights) {
+            lights[key].setOpacity(0);
+        }
+        lights.pot.setPosition(pot_position.x, pot_position.y + 4);
 
         // Items
         for (let i = 0; i < 4; i++) {
+            lights[`candle${i}`].setPosition(candlePositionX[i], 62);
             candles.static[i].setPosition(candlePositionX[i], 67);
             candles.animate[i].setOpacity(0);
             candles.animate[i].setAnimationDelay(1);
         }
 
-        AnimationItemList[`pot_cooking.png`].setOpacity(0)
+        AnimationItemList[`pot_cooking.png`].setOpacity(0);
         AnimationItemList[`pot_cooking.png`].setPosition(pot_position.x, pot_position.y);
         AnimationItemList[`pot_cooking.png`].setAnimationDelay(4);
 
@@ -192,6 +240,11 @@
         NPCList[`[Chara]Civilian_Male_A.png`].setMovingPattern(`s`);
         NPCList[`[Chara]Civilian_Male_A.png`].setAnimationDelay(16);
         NPCList[`[Chara]Civilian_Male_A.png`].setOpacity(0);
+        // Wife
+        NPCList[`[Chara]Civilian_Female_A.png`].setDirection(NPC.DIRECTION.DOWN);
+        NPCList[`[Chara]Civilian_Female_A.png`].setMovingPattern(`s`);
+        NPCList[`[Chara]Civilian_Female_A.png`].setAnimationDelay(16);
+        NPCList[`[Chara]Civilian_Female_A.png`].setOpacity(0);
 
         // Customer 1
         NPCList[`[Chara]Samurai_USM.png`].setDirection(NPC.DIRECTION.DOWN);
@@ -221,8 +274,10 @@
         }
 
         // Turn on 1/2 candle
-        for (const candle of [candles.animate[1], candles.animate[2]]) {
-            candle.fadein(SCENARIO_TIMESTAMP[0]);
+
+        for (const idx of [1, 2]) {
+            lights[`candle${idx}`].fadein(SCENARIO_TIMESTAMP[0]);
+            candles.animate[idx].fadein(SCENARIO_TIMESTAMP[0]);
         }
 
         AnimalList.cat[0].fadein(SCENARIO_TIMESTAMP[0]);
@@ -230,6 +285,9 @@
 
         NPCList[`[Chara]Civilian_Male_A.png`].setPosition(132, 88, SCENARIO_TIMESTAMP[0]);
         NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[0]);
+
+        NPCList[`[Chara]Civilian_Female_A.png`].setPosition(32, 136, SCENARIO_TIMESTAMP[0]);
+        NPCList[`[Chara]Civilian_Female_A.png`].fadein(SCENARIO_TIMESTAMP[0]);
     })();
 
     // SCENARIO_TIMESTAMP[0] ~ [1]
@@ -244,6 +302,7 @@
     // SCENARIO_TIMESTAMP[1]
     (() => {
         // Cooking in pot
+        lights.pot.fadein(SCENARIO_TIMESTAMP[1]);
         StaticItemList[`pot.png`].fadeout(SCENARIO_TIMESTAMP[1]);
         AnimationItemList[`pot_cooking.png`].fadein(SCENARIO_TIMESTAMP[1]);
 
@@ -257,13 +316,34 @@
         NPCList[`[Chara]Civilian_Male_A.png`].fadeout(SCENARIO_TIMESTAMP[1] - 1000);
         NPCList[`[Chara]Civilian_Male_A.png`].setPosition(100, 88, SCENARIO_TIMESTAMP[1]);
         NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[1]);
+
+        NPCList[`[Chara]Civilian_Female_A.png`].fadeout(SCENARIO_TIMESTAMP[1] - 1000);
+        NPCList[`[Chara]Civilian_Female_A.png`].setDirection(NPC.DIRECTION.UP, SCENARIO_TIMESTAMP[1]);
+        NPCList[`[Chara]Civilian_Female_A.png`].setPosition(148, 140, SCENARIO_TIMESTAMP[1] + 1);
+        NPCList[`[Chara]Civilian_Female_A.png`].fadein(SCENARIO_TIMESTAMP[1] + 2);
+
     })();
 
     // SCENARIO_TIMESTAMP[2]
     (() => {
+        // Food
+        FoodList.Soup[0].fadein(SCENARIO_TIMESTAMP[2]);
+        FoodList.Rum[0].fadein(SCENARIO_TIMESTAMP[2]);
 
-        FoodList.Beer[0].fadein(SCENARIO_TIMESTAMP[2])
-        FoodList.Rum[0].fadein(SCENARIO_TIMESTAMP[2])
+        // Fire off to pot
+        lights.pot.fadeout(SCENARIO_TIMESTAMP[2]);
+        StaticItemList[`pot.png`].fadein(SCENARIO_TIMESTAMP[2]);
+        AnimationItemList[`pot_cooking.png`].fadeout(SCENARIO_TIMESTAMP[2]);
+
+        NPCList[`[Chara]Civilian_Male_A.png`].fadeout(SCENARIO_TIMESTAMP[2] - 1000);
+        NPCList[`[Chara]Civilian_Male_A.png`].setDirection(NPC.DIRECTION.LEFT, SCENARIO_TIMESTAMP[2]);
+        NPCList[`[Chara]Civilian_Male_A.png`].setPosition(49, 85, SCENARIO_TIMESTAMP[2] + 1);
+        NPCList[`[Chara]Civilian_Male_A.png`].fadein(SCENARIO_TIMESTAMP[2] + 2);
+
+        NPCList[`[Chara]Civilian_Female_A.png`].fadeout(SCENARIO_TIMESTAMP[2] - 1000);
+        NPCList[`[Chara]Civilian_Female_A.png`].setDirection(NPC.DIRECTION.UP, SCENARIO_TIMESTAMP[2]);
+        NPCList[`[Chara]Civilian_Female_A.png`].setPosition(206, 116, SCENARIO_TIMESTAMP[2] + 1);
+        NPCList[`[Chara]Civilian_Female_A.png`].fadein(SCENARIO_TIMESTAMP[2] + 2);
 
         NPCList[`[Chara]Samurai_USM.png`].setPosition(33, 85, SCENARIO_TIMESTAMP[2]);
         NPCList[`[Chara]Samurai_USM.png`].fadein(SCENARIO_TIMESTAMP[2]);
@@ -276,9 +356,13 @@
     // SCENARIO_TIMESTAMP[3]
     (() => {
         // Turn on 0/3 candle
-        for (const candle of [candles.animate[0], candles.animate[3]]) {
-            candle.fadein(SCENARIO_TIMESTAMP[3]);
+        for (const idx of [0, 3]) {
+            lights[`candle${idx}`].fadein(SCENARIO_TIMESTAMP[3]);
+            candles.animate[idx].fadein(SCENARIO_TIMESTAMP[3]);
         }
+        FoodList.Soup[0].fadeout(SCENARIO_TIMESTAMP[3]);
+        FoodList.Empty_dish[0].fadein(SCENARIO_TIMESTAMP[3]);
+
     })();
     // NPCs
     (() => {
@@ -347,11 +431,6 @@
         // NPCList[`[Chara]Civilian_Male_C.png`].setPosition(587, 543);
         // NPCList[`[Chara]Civilian_Male_C.png`].setMovingPattern(`v`, -270);
 
-
-        // NPCList[`[Chara]Civilian_Female_A.png`].setPosition(448, 452);
-        // NPCList[`[Chara]Civilian_Female_A.png`].setDirection(NPC.DIRECTION.RIGHT);
-        // NPCList[`[Chara]Civilian_Female_A.png`].setMovingPattern(`s`);
-        // NPCList[`[Chara]Civilian_Female_A.png`].setAnimationDelay(8);
 
         // NPCList[`[Chara]Civilian_Female_B.png`].setPosition(464, 452);
         // NPCList[`[Chara]Civilian_Female_B.png`].setDirection(NPC.DIRECTION.LEFT);
@@ -541,11 +620,15 @@
     blackOverlay.style.opacity = 1;
     setTimeout(() => {
         // fadeInBlackOverlay(0.2);
-        fadeInBlackOverlay(0.7);
+        fadeInBlackOverlay(0.9);
     }, 1360);
     setTimeout(() => {
+        // fadeInBlackOverlay(0.2);
+        fadeInBlackOverlay(0.7);
+    }, SCENARIO_TIMESTAMP[0]);
+    setTimeout(() => {
         fadeInBlackOverlay(0.5);
-    }, SCENARIO_TIMESTAMP[2]);
+    }, SCENARIO_TIMESTAMP[3]);
     console.log(`BGM Start : ${BGM_NAME}`);
 
     getTo();
