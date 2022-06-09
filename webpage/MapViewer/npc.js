@@ -237,8 +237,16 @@ class NPC {
         this.speed = speed;
     }
 
-    setAnimationDelay(delay) {
-        this.animationDelay = delay;
+    setAnimationDelay(delay, timestamp = 0) {
+        if (timestamp === 0) {
+            this.animationDelay = delay;
+        } else {
+
+            this.timestampEvent.push({
+                event: `setAnimationDelay`,
+                animationDelay: delay
+            });
+        }
     }
 
     setSprite(idx) {
@@ -277,17 +285,10 @@ class NPC {
         // console.log(`Animation start`)
         if (this.used === false ||
             this.isShow === false) {
-            if (this.img.includes(`pot_cooking.png`)) {
-                console.log(this.used, this.isShow)
-                console.log(this.opacity)
-
-                console.log(`NO SHOW`)
-            }
             return;
         }
 
         this._currentDelay = (this._currentDelay + 1) % this.animationDelay;
-        if (this.img.includes(`meatball`)) {}
 
         if (this._currentDelay === 0) {
             if (this.distance === 0) {}
@@ -402,9 +403,13 @@ class NPC {
                         this.opacity = 0;
                     }
                     break;
-                case `setDirection`: {
+                case `setDirection`:
                     this.direction = this.currentEvent.direction;
-                }
+                    break;
+                case `setAnimationDelay`:
+                    this.animationDelay = this.currentEvent.animationDelay;
+                    break;
+
             }
 
             if (this.timestampEvent[this.timestampEventIndex + 1] &&
