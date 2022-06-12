@@ -1,5 +1,5 @@
 (async () => {
-
+    const BGM_NAME = `Tales of Melodynialia - Aristinale Village.mp3`;
     const VIEWER_MOVING_DURATION = 20; // s
 
     const container = document.getElementById(`container`);
@@ -393,6 +393,63 @@
         setTimeout(moveViewer, VIEWER_MOVING_DURATION * 1000);
     }
 
+
+    function fadeInBlackOverlay(targetOpacity = 0) {
+        if (blackOverlay.style.opacity === ``) {
+            blackOverlay.style.opacity = 1;
+        }
+        const fadeOutBlackOverlayInterval = setInterval(() => {
+            if (blackOverlay.style.opacity <= targetOpacity) {
+                clearInterval(fadeOutBlackOverlayInterval);
+            }
+            blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) - 0.02;
+        }, 30);
+    }
+
+    function fadeOutBlackOverlay() {
+        // blackOverlay.style.opacity = 0;
+        const fadeOutBlackOverlayInterval = setInterval(() => {
+            if (blackOverlay.style.opacity >= 1) {
+                clearInterval(fadeOutBlackOverlayInterval);
+            }
+            blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) + 0.02;
+        }, 30);
+    }
+    
+    const startTime = new Date().getTime();
+
+    function startTimer() {
+        let diff;
+        if (NPC._DEBUG_SET_SCENARIO_INDEX_ENABLED === false) {
+            diff = new Date(new Date().getTime() - startTime);
+        } else {
+            diff = new Date(NPC._DEBUG_SCENARIO_TIMESTAMP);
+        }
+
+        document.getElementById(`timer`).innerHTML = `` +
+            `${diff.getMinutes().toString().padStart(2, `0`)}:` +
+            `${diff.getSeconds().toString().padStart(2, `0`)}.` +
+            `${diff.getMilliseconds().toString().padStart(3, `0`)}`;
+    }
+    async function loadAudio() {
+        return new Promise((resolve, reject) => {
+
+            if (BGM_NAME !== null) {
+                bgm.src = `mp3/${BGM_NAME}`
+                bgm.load();
+                bgm.play();
+                bgm.onplay = (() => {
+                    fadeInBlackOverlay(0);
+                    setInterval(startTimer, 10);
+                    resolve();
+                });
+
+            } else {
+                resolve();
+            }
+        })
+    }
+    await loadAudio();
     getTo();
     render();
     moveViewer();
