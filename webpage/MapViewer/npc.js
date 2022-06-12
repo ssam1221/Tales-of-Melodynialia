@@ -44,6 +44,16 @@ class NPC {
         });
     }
 
+    static _DEBUG_SCENARIO_TIMESTAMP = 0;
+    static _DEBUG_SET_SCENARIO_INDEX_ENABLED = false;
+    static _DEBUG_DISABLE() {
+        this._DEBUG_SET_SCENARIO_INDEX_ENABLED = false;
+    }
+    static _DEBUG_SET_SCENARIO_TIMESTAMP(timestamp) {
+        this._DEBUG_SET_SCENARIO_INDEX_ENABLED = true;
+        this._DEBUG_SCENARIO_TIMESTAMP = timestamp;
+    }
+
     constructor(filename, options = {}) {
         return new Promise((resolve, reject) => {
             this.canvas = document.getElementById(`mapCanvas`);
@@ -60,6 +70,7 @@ class NPC {
             this.showTimestamp = 0;
             this.opacity = 1;
 
+            this.animateOrderIndex = 0;
 
             this.ctx = this.canvas.getContext(`2d`);
 
@@ -74,6 +85,11 @@ class NPC {
                 NPC.ctx = this.ctx;
             }
 
+            this.type = ``;
+            this.sprite = {
+                row: 0,
+                col: 0
+            }
             this.positionList = []; // {x, y, timestamp}
             this.currentPositionListIndex = 0;
             this.currentPositionRenderingIndex = 0;
@@ -268,13 +284,15 @@ class NPC {
         setInterval(() => {
             this.ctx.imageSmoothingEnabled = false;
             this.ctx.clearRect(0, 0, 240 * zoomRatio, 240 * zoomRatio);
-            this.ctx.drawImage(this.mapImage, 0, 0, 240 * zoomRatio, 240 * zoomRatio);
+            this.ctx.drawImage(this.mapImage, 0, 0, this.mapImage.naturalWidth * zoomRatio, this.mapImage.naturalHeight * zoomRatio);
             for (const instance of NPCList) {
                 // console.log(`Render : `, instance.img)
-                instance.timestamp = new Date().getTime() - startTimestamp;
-                if (instance.timestamp > instance.showTimestamp) {
-                    instance.renderFrame();
+                if (NPC._DEBUG_SET_SCENARIO_INDEX_ENABLED === false) {
+                    instance.timestamp = new Date().getTime() - startTimestamp;
+                } else {
+                    instance.timestamp = NPC._DEBUG_SCENARIO_TIMESTAMP;
                 }
+                instance.renderFrame();
             }
         }, 1000 / FPS);
     }
@@ -415,16 +433,34 @@ class NPC {
             if (this.timestampEvent[this.timestampEventIndex + 1] &&
                 this.timestampEvent[this.timestampEventIndex + 1].timestamp <= this.timestamp) {
                 this.timestampEventIndex++;
+
             }
         }
 
         this.ctx.save();
         this.ctx.globalAlpha = this.opacity;
-        this.ctx.drawImage(this.imgTag,
-            this.spriteSize.width * SPRITE_ORDER[this.spriteImageIndex], this.spriteSize.height * this.direction,
-            this.spriteSize.width, this.spriteSize.height,
-            this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
-            this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
-        this.ctx.restore();
+        if (this.options.type === `animateItem`) {
+            const col = this.animateOrderIndex % this.options.sprite.col;
+            const row = parseInt(this.animateOrderIndex / this.options.sprite.col);
+            this.ctx.drawImage(this.imgTag,
+                this.spriteSize.width * col, this.spriteSize.height * row,
+                this.spriteSize.width, this.spriteSize.height,
+                this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
+                this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
+            this.ctx.restore();
+
+            this.animateOrderIndex++;
+            if (this.animateOrderIndex > this.options.sprite.row * this.options.sprite.col - 1) {
+                this.animateOrderIndex = 0;
+            }
+
+        } else {
+            this.ctx.drawImage(this.imgTag,
+                this.spriteSize.width * SPRITE_ORDER[this.spriteImageIndex], this.spriteSize.height * this.direction,
+                this.spriteSize.width, this.spriteSize.height,
+                this.renderPosition.x * zoomRatio, this.renderPosition.y * zoomRatio,
+                this.spriteSize.width * zoomRatio, this.spriteSize.height * zoomRatio);
+            this.ctx.restore();
+        }
     }
 }
