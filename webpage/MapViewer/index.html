@@ -8,12 +8,14 @@
             border: 0
         }
 
-        div#container, div#blackOverlay {
+        div#container,
+        div#blackOverlay {
             position: absolute;
             margin: 50px;
             width: 640px;
             height: 640px;
         }
+
         div#blackOverlay {
             position: absolute;
             background-color: black;
@@ -80,8 +82,22 @@
             top: 50px;
             right: 50px;
         }
+
+        div#logo {
+            position: absolute;
+            margin: 50px;
+            width: 640px;
+            height: 640px;
+        }
+        div#logo > img#logoImg {
+            position: absolute;
+            left: 10%;
+            top: 10%;
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+        }
     </style>
-    <script src="../commonFiles/common.js"> </script>
     <script src="npc.js"> </script>
     <script src="main.js"> </script>
 </head>
@@ -106,6 +122,9 @@
         <!-- <img id="testImg"> -->
     </div>
     <audio id="bgm" controls></audio>
+    <div id="logo">
+        <img id="logoImg" src="../commonFiles/image/Title.png">
+    </div>
 </body>
 
 

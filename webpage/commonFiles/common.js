@@ -1,7 +1,43 @@
 const startTime = new Date().getTime();
+const logoConatainer = document.getElementById(`logo`);
+const logoImage = document.getElementById(`logoImg`);
 
+// Logo
+function fadeOutLogo(targetOpacity = 0) {
+    if (logoConatainer.style.opacity === ``) {
+        logoConatainer.style.opacity = 1;
+    }
+    const interval = setInterval(() => {
+        if (logoConatainer.style.opacity <= targetOpacity) {
+            clearInterval(interval);
+        }
+        logoConatainer.style.opacity = parseFloat(logoConatainer.style.opacity) - 0.02;
+    }, 30);
+}
 
+function fadeInLogo(targetOpacity = 1) {
+    if (logoConatainer.style.opacity === ``) {
+        logoConatainer.style.opacity = 0;
+    }
+    const interval = setInterval(() => {
+        if (logoConatainer.style.opacity >= 1) {
+            clearInterval(interval);
+        }
+        logoConatainer.style.opacity = parseFloat(logoConatainer.style.opacity) + 0.02;
+    }, 30);
+}
 
+function setLogoPosition(left, top) {
+    logoConatainer.style.left = left;
+    logoConatainer.style.top = top;
+}
+
+function setLogoSize(width, height) {
+    logoConatainer.style.width = width;
+    logoConatainer.style.height = height;
+}
+
+// Timer
 function startTimer() {
     let diff;
     if (typeof NPC === `object` && NPC._DEBUG_SET_SCENARIO_INDEX_ENABLED !== false) {
@@ -28,12 +64,12 @@ function fadeInBlackOverlay(targetOpacity = 0) {
     }, 30);
 }
 
-function fadeOutBlackOverlay() {
+function fadeOutBlackOverlay(targetOpacity = 0) {
     if (blackOverlay.style.opacity === ``) {
         blackOverlay.style.opacity = 0;
     }
     const fadeOutBlackOverlayInterval = setInterval(() => {
-        if (blackOverlay.style.opacity >= 1) {
+        if (blackOverlay.style.opacity >= targetOpacity) {
             clearInterval(fadeOutBlackOverlayInterval);
         }
         blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) + 0.02;

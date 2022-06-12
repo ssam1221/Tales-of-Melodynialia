@@ -11,6 +11,7 @@ async function loadScript(scriptName) {
 }
 
 window.onload = async () => {
+    await loadScript(`../../commonFiles/common.js`);
     if (location.href.includes(`AristinaleVillage`)) {
         await loadScript(`scripts/AristinaleVillage.js`);
     }

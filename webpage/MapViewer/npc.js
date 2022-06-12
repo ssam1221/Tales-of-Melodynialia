@@ -219,6 +219,9 @@ class NPC {
     }
 
     setPosition(x, y, timestamp = 0) {
+        if ((typeof x !== `number`) || (typeof y !== `number`)) {
+            throw new Error(`${this.img}.setPosition() : invalid position value : (${x}, ${y}, ${timestamp})`);
+        }
         this.positionList.push({
             x,
             y,
