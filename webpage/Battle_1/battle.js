@@ -1,5 +1,4 @@
 const FPS = 40;
-
 const ARROW_MOVE_SPEED = 600;
 
 const UI_MODE = {
@@ -18,22 +17,11 @@ const UI_MODE = {
 }
 
 let timerInterval = 0;
-let startTime = 0;
 
 async function sleep(timer = 1000) {
     return new Promise((resolve, reject) => {
         setTimeout(resolve, timer);
     })
-}
-
-function startTimer() {
-    startTime = new Date();
-    timerInterval = setInterval(() => {
-        const diff = new Date(new Date().getTime() - startTime.getTime());
-        document.getElementById(`timer`).innerHTML = `${diff.getMinutes().toString().padStart(2,'0')}:` +
-            `${diff.getSeconds().toString().padStart(2,'0')}:` +
-            `${diff.getMilliseconds().toString().padStart(3,'0')}`;
-    }, 10);
 }
 
 function endTimer() {

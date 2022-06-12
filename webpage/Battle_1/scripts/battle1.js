@@ -1,4 +1,5 @@
 (async () => {
+    const BGM_NAME = `Tales of Melodynialia - Grassland Battle.mp3`;
 
     const battleInstance = await new Battle({
         background: `./images/background1.png`
@@ -631,7 +632,8 @@
         })();
     })();
 
-    setTimeout(() => {
+    setTimeout(async () => {
+        await loadAudio(BGM_NAME);
         battleInstance.start();
     }, 2000);
     // battleInstance.start();
