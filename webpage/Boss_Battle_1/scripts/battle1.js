@@ -168,12 +168,39 @@
 
         // Turn 1
         (() => {
+
+            battleInstance.addBattleScenario({
+                action: `MonsterAttack`,
+                attackName: `Poison Fang`,
+                from: 0,
+                to: `Clef`,
+                // damage: 47
+                damage: 180
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Magic_Heal`,
+                spell: `Cure`,
+                from: `Lirico`,
+                to: `Clef`,
+                value: 150,
+                comments: `Clef's HP is healed by 150!`
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Magic_Buff`,
+                spell: `Fire Enchant`,
+                from: `Lirico`,
+                to: `Clef`,
+
+                comments: `The power of flame is dwelling into Clef's sword!`
+            });
             battleInstance.addBattleScenario({
                 action: `Attack`,
                 attackName: `Sword Slash`,
                 from: `Clef`,
                 to: 0,
-                damage: 272
+                damage: 27
             });
 
             battleInstance.addBattleScenario({
@@ -183,39 +210,31 @@
                 to: 0,
                 damage: 32
             });
+            // battleInstance.addBattleScenario({
+            //     action: `MonsterAttack`,
+            //     attackName: `Quick Attack`,
+            //     from: 0,
+            //     to: `Lirico`,
+            //     damage: 5
+            // });
 
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Poison Fang`,
-                from: 0,
-                to: `Clef`,
-                damage: 47
-            });
+            // battleInstance.addBattleScenario({
+            //     action: `MonsterAttack`,
+            //     attackName: `Double attack`,
+            //     from: 0,
+            //     to: `Clef`,
+            //     damage: 8
+            // });
 
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Quick Attack`,
-                from: 0,
-                to: `Lirico`,
-                damage: 5
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Double attack`,
-                from: 0,
-                to: `Clef`,
-                damage: 8
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Rhythmical attack`,
-                from: 0,
-                to: `Lirico`,
-                damage: 6
-            });
+            // battleInstance.addBattleScenario({
+            //     action: `MonsterAttack`,
+            //     attackName: `Rhythmical attack`,
+            //     from: 0,
+            //     to: `Lirico`,
+            //     damage: 6
+            // });
         })();
+        return;
 
         // Turn 2
         (() => {

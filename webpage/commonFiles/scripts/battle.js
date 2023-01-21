@@ -144,6 +144,78 @@ class Battle {
         });
     }
 
+    async _commandActionToPlayer({
+        target,
+        scenario,
+        moveType
+    }) {
+        return new Promise(async (resolve, reject) => {
+            console.log(`Run _commandActionToPlayer()`)
+            let attackInfo;
+            let isHeal = false;
+
+            switch (moveType) {
+                // case `Attack`:
+                //     attackInfo = this.AttackEffect[scenario.attackName];
+                //     break;
+                case `Magic_Heal`:
+                    isHeal = true;
+                // FALL-THROUTH
+                case `Magic_Buff`:
+                    attackInfo = this.MagicList[scenario.spell];
+                    break;
+                // TODO
+                case `Item`:
+                    break;
+            }
+
+            if (isHeal === true) {
+                const timestampMax = attackInfo.col * attackInfo.row;
+
+                // Do animation effect
+                while (this.attackRenderTimestamp < timestampMax) {
+                    await (() => {
+                        return new Promise((_resolve, _reject) => {
+                            setTimeout(() => {
+                                this.attackRenderTimestamp++;
+                                _resolve();
+                            }, 1000 / FPS);
+                        });
+                    })();
+                }
+                await sleep(1000);
+            }
+
+            // if (scenario.damage === 0) {
+            //     console.log(`Avoid attack`);
+            //     this.renderingTextInUI = `${enemy.name} avoid!`;
+            // } else {
+            //     this.renderingTextInUI = `${enemy.name} got ${scenario.damage} damage(s)!`;
+            // }
+
+            // battle.js:186 numOfFrames        :  75
+            // battle.js:187 decreaseHPPerFrame :  4
+
+            let remainHPDiff = scenario.value;
+            const numOfFrames = Math.floor(1000 / FPS);
+            const diffHPPerFrame = Math.ceil(scenario.value / numOfFrames);
+            console.log(`numOfFrames        : `, numOfFrames)
+            console.log(`diffHPPerFrame : `, diffHPPerFrame)
+            while (remainHPDiff > 0) {
+                remainHPDiff = remainHPDiff - diffHPPerFrame;
+                await (() => {
+                    return new Promise((_resolve, _reject) => {
+                        setTimeout(() => {
+                            target.remainHP = target.remainHP + diffHPPerFrame
+                            _resolve();
+                        }, 3 * 1000 / FPS);
+                    });
+                })();
+            }
+            resolve();
+        });
+    }
+
     async _reduceRemainHP({
         enemy,
         scenario,
@@ -178,15 +250,12 @@ class Battle {
                 this.renderingTextInUI = `${enemy.name} got ${scenario.damage} damage(s)!`;
             }
 
-//             enemyTargetHP      :  394
-// battle.js:186 numOfFrames        :  75
-// battle.js:187 decreaseHPPerFrame :  4
+            // battle.js:186 numOfFrames        :  75
+            // battle.js:187 decreaseHPPerFrame :  4
 
             let remainHPDiff = scenario.damage;
-            const enemyTargetHP = enemy.remainHP - scenario.damage;
-            const numOfFrames = Math.floor(3 * 1000 / FPS);
+            const numOfFrames = Math.floor(1000 / FPS);
             const decreaseHPPerFrame = Math.ceil(scenario.damage / numOfFrames);
-            console.log(`enemyTargetHP      : `, enemyTargetHP)
             console.log(`numOfFrames        : `, numOfFrames)
             console.log(`decreaseHPPerFrame : `, decreaseHPPerFrame)
             while (remainHPDiff > 0) {
@@ -195,7 +264,7 @@ class Battle {
                 await (() => {
                     return new Promise((_resolve, _reject) => {
                         setTimeout(() => {
-                            enemy.remainHP =  enemy.remainHP - decreaseHPPerFrame
+                            enemy.remainHP = enemy.remainHP - decreaseHPPerFrame
                             if (enemy.remainHP <= 0) {
                                 remainHPDiff = 0;
                                 enemy.status = `Deading`;
@@ -391,6 +460,52 @@ class Battle {
         });
     }
 
+    async useMagicBuff(magicScenario) {
+        return new Promise(async (resolve, reject) => {
+            const targetCharacter = this.findPlayerInfoByName(magicScenario.to);
+            const targetCharacterName = targetCharacter.name;
+
+            this.attackRenderTimestamp = 0;
+            this.currentAttackName = magicScenario.spell;
+            this.currentAttackTarget = magicScenario.to;
+            const buffInfo = this.MagicList[magicScenario.spell];
+            this.renderingTextInUI = [
+                `${magicScenario.from} uses ${magicScenario.spell} to ${targetCharacterName}!`,
+                `Use ${buffInfo.mana} mana!`,
+            ];
+            if (this.findPlayerInfoByName(magicScenario.from).remainMP < buffInfo.mana) {
+                console.warn(`The magic scenario need more mana.`);
+            }
+            this.findPlayerInfoByName(magicScenario.from).remainMP -= buffInfo.mana;
+
+            // console.log(`===========================================`)
+            // console.log(this.MagicList)
+            // console.log(magicScenario)
+            // console.log(attackInfo)
+            // console.log(`===========================================`)
+
+            if (magicScenario.value) {
+                await this._commandActionToPlayer({
+                    target: targetCharacter,
+                    scenario: magicScenario,
+                    moveType: `Magic`
+                });
+            }
+
+            // After effect rendering end
+            this.renderingTextInUI = [
+                `${magicScenario.comments}`
+            ];
+
+            // console.log(`magic done done`);
+            setTimeout(() => {
+                this.renderingTextInUI = ``;
+                this.attackRenderTimestamp = 0;
+                resolve();
+            }, 1000);
+        });
+    }
+
     async useMagic(magicScenario) {
         return new Promise(async (resolve, reject) => {
             const enemy = this.findEnemyInfoByIndex(magicScenario.to);
@@ -400,8 +515,9 @@ class Battle {
             this.currentAttackName = magicScenario.spell;
             this.currentAttackTarget = magicScenario.to;
             const attackInfo = this.MagicList[magicScenario.spell];
-            this.renderingTextInUI = [`${magicScenario.from} uses ${magicScenario.spell} to ${enemyName}!`,
-            `Use ${attackInfo.mana} mana!`
+            this.renderingTextInUI = [
+                `${magicScenario.from} uses ${magicScenario.spell} to ${enemyName}!`,
+                `Use ${attackInfo.mana} mana!`
             ];
             if (this.findPlayerInfoByName(magicScenario.from).remainMP < attackInfo.mana) {
                 console.warn(`The magic scenario need more mana.`);
@@ -413,11 +529,20 @@ class Battle {
             // console.log(magicScenario)
             // console.log(attackInfo)
             // console.log(`===========================================`)
-            await this._reduceRemainHP({
-                enemy,
-                scenario: magicScenario,
-                attackType: `Magic`
-            });
+            if (magicScenario.action === `Magic`) {
+                await this._reduceRemainHP({
+                    enemy,
+                    scenario: magicScenario,
+                    attackType: `Magic`
+                });
+            }
+            else {
+                await this._commandActionToPlayer({
+                    target: enemy,
+                    scenario: magicScenario,
+                    moveType: magicScenario.action
+                });
+            }
 
             // const timestampMax = attackInfo.col * attackInfo.row;
             // while (this.attackRenderTimestamp < timestampMax) {
@@ -524,6 +649,13 @@ class Battle {
             selector.restore();
             return selector;
         }
+    }
+
+    async moveCharactorSelect(targetIndex) {
+        return new Promise(async (resolve, reject) => {
+
+            resolve();
+        });
     }
 
     async moveEnemySelectorArrow(targetIndex) {
@@ -1026,7 +1158,7 @@ class Battle {
             // Draw emeny image
             // this.ctx.globalCompositeOperation = "source-over";
             const isJump = this.isBattleStart ? 2 : 1;
-            
+
             const remainHPPercentage = (enemy.remainHP / enemy.HP) * 100;
             let targetEnemyImageInfo = enemy.imageInfo.reverse().find(
                 (imgInfo) => { return imgInfo.phaseInfo.remainHP >= remainHPPercentage }
@@ -1125,13 +1257,16 @@ class Battle {
                     let textArr = [];
                     textArr.push(`You Win!`);
                     // this.renderTextInUI(textArr);
-                    this.renderingTextInUI = [...textArr];
+                    this.renderingTextInUI = [
+                        ...textArr];
                     await sleep(500);
                     textArr.push(`Got ${awards.Gold} Gold!`);
-                    this.renderingTextInUI = [...textArr];
+                    this.renderingTextInUI = [
+                        ...textArr];
                     await sleep(500);
                     textArr.push(`Got ${awards.EXP} EXP!`);
-                    this.renderingTextInUI = [...textArr];
+                    this.renderingTextInUI = [
+                        ...textArr];
                     await sleep(500);
 
                 } else {
@@ -1205,6 +1340,29 @@ class Battle {
                         this.UIMode = UI_MODE.ATTACK_RESULT;
                         break;
                     }
+                    // Use magic to player character
+                    case `Magic_Heal`:
+                    case `Magic_Buff`: {
+                        console.log(`BUFF`)
+                        this.UIMode = UI_MODE.BATTLE_MENU;
+                        await this.moveMenuSelectorArrow(1);
+                        // console.log(`ENEMY:`, this.findEnemyInfoByIndex(scenario.to));
+                        // console.log(`Select magic`)
+                        this.UIMode = UI_MODE.MAGIC_SELECT;
+                        await this.selectMagic(scenario);
+                        this.UIMode = UI_MODE.ENEMY_SELECT;
+                        await this.moveCharactorSelect(scenario.to);
+                        // OTDO 
+                        // await this.moveEnemySelectorArrow(scenario.to);
+                        // await this.moveEnemySelectorArrow(scenario.to);
+                        // console.log(`Attack to enemy`);
+                        this.UIMode = UI_MODE.ATTACKING;
+                        await this.useMagicBuff(scenario);
+                        this.UIMode = UI_MODE.ATTACK_RESULT;
+                        break;
+                    }
+
+
                     case `Magic`: {
                         this.UIMode = UI_MODE.BATTLE_MENU;
                         await this.moveMenuSelectorArrow(1);
