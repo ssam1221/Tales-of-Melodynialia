@@ -184,7 +184,8 @@ class Battle {
                 await (() => {
                     return new Promise((_resolve, _reject) => {
                         setTimeout(() => {
-                            target.remainHP = target.remainHP + diffHPPerFrame
+                            this.attackRenderTimestamp++;
+                            target.remainHP = target.remainHP + diffHPPerFrame;
                             _resolve();
                         }, 3 * 1000 / FPS);
                     });
@@ -351,17 +352,19 @@ class Battle {
     async renderBuffCharacter(targetIndex, skillName) {
         return new Promise(async (resolve, reject) => {
             if (this.UIMode === UI_MODE.BUFFING) {
-                console.log(`renderBuffCharacter(${targetIndex}) : `, skillName);
+                // console.log(`renderBuffCharacter(${targetIndex}) : `, skillName);
                 // console.log(`renderAttackEnemy start`)
                 const targetCharInfo = this.findPlayerInfoByIndex(targetIndex);
                 const skillInfo = this.AttackEffect[skillName];
+                // console.log(`renderBuffCharacter(${targetIndex}) : targetCharInfo  :`, targetCharInfo);
+                // console.log(`renderBuffCharacter(${targetIndex}) : skillInfo  :`, skillInfo);
 
                 const spriteRow = parseInt(this.attackRenderTimestamp / skillInfo.col);
                 const spriteCol = this.attackRenderTimestamp % skillInfo.col;
 
                 const spriteSize = {
-                    width: 64,
-                    height: 64
+                    width: 192,
+                    height: 192
                 }
 
                 this.ctx.drawImage(
@@ -371,7 +374,10 @@ class Battle {
                     spriteSize.width, spriteSize.height,
                     (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * targetIndex),
                     this.UIContainer.top + 30,
-                    64, 64);
+                    64,
+                    64
+                    // 0, 0, 640, 640
+                );
 
                 setTimeout(resolve, 3000);
             }
@@ -1396,7 +1402,7 @@ class Battle {
     }
 
     renderTextInUI(str = this.renderingTextInUI) {
-        console.log(`Rendering text : `, str)
+        // console.log(`Rendering text : `, str);
         let textArr;
 
         if (typeof str === `string`) {
@@ -1667,7 +1673,7 @@ class Battle {
                 this.renderAttackEnemy(this.selectedEnemyIndex, this.currentAttackName);
             } else if (this.UIMode === UI_MODE.BUFFING) {
                 this.drawPlayerCharacterSelected(this.selectedCharacterIndex);
-                this.renderBuffCharacter(this.selectedCharacterIndex, this.currentAttackName);
+                await this.renderBuffCharacter(this.selectedCharacterIndex, this.currentAttackName);
             } else if (this.UIMode === UI_MODE.ATTACK_RESULT) {
                 this.renderTextInUI();
             } else if (this.UIMode === UI_MODE.ATTACK_BY_ENEMY) {
