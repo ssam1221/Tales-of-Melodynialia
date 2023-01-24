@@ -155,42 +155,53 @@ class Battle {
         moveType
     }) {
         return new Promise(async (resolve, reject) => {
-            console.log(`Run _commandActionToPlayer()`);
+            console.log(`Run _commandActionToPlayer() : `, moveType);
             let attackInfo;
-            let isHeal = false;
-
+            let remainHPDiff = scenario.value ?? 60;
+            const numOfFrames = Math.floor(1000 / FPS);
+            const diffHPPerFrame = Math.ceil(remainHPDiff / numOfFrames);
             switch (moveType) {
                 // case `Attack`:
                 //     attackInfo = this.AttackEffect[scenario.attackName];
                 //     break;
                 case `Magic_Heal`:
-                    isHeal = true;
-                // FALL-THROUTH
+
+                    // console.log(`numOfFrames        : `, numOfFrames)
+                    // console.log(`diffHPPerFrame : `, diffHPPerFrame)
+                    while (remainHPDiff > 0) {
+                        remainHPDiff = remainHPDiff - diffHPPerFrame;
+                        await (() => {
+                            return new Promise((_resolve, _reject) => {
+                                setTimeout(() => {
+                                    this.attackRenderTimestamp++;
+                                    target.remainHP = target.remainHP + diffHPPerFrame;
+                                    _resolve();
+                                }, 3 * 1000 / FPS);
+                            });
+                        })();
+                    }
+                    break;
                 case `Magic_Buff`:
                     attackInfo = this.MagicList[scenario.spell];
+                    // console.log(`numOfFrames        : `, numOfFrames)
+                    // console.log(`diffHPPerFrame : `, diffHPPerFrame)
+                    while (remainHPDiff > 0) {
+                        remainHPDiff = remainHPDiff - diffHPPerFrame;
+                        await (() => {
+                            return new Promise((_resolve, _reject) => {
+                                setTimeout(() => {
+                                    this.attackRenderTimestamp++;
+                                    _resolve();
+                                }, 3 * 1000 / FPS);
+                            });
+                        })();
+                    }
                     break;
                 // TODO
                 case `Item`:
                     break;
             }
 
-            let remainHPDiff = scenario.value;
-            const numOfFrames = Math.floor(1000 / FPS);
-            const diffHPPerFrame = Math.ceil(scenario.value / numOfFrames);
-            // console.log(`numOfFrames        : `, numOfFrames)
-            // console.log(`diffHPPerFrame : `, diffHPPerFrame)
-            while (remainHPDiff > 0) {
-                remainHPDiff = remainHPDiff - diffHPPerFrame;
-                await (() => {
-                    return new Promise((_resolve, _reject) => {
-                        setTimeout(() => {
-                            this.attackRenderTimestamp++;
-                            target.remainHP = target.remainHP + diffHPPerFrame;
-                            _resolve();
-                        }, 3 * 1000 / FPS);
-                    });
-                })();
-            }
             console.log(`End _commandActionToPlayer()`);
             resolve();
         });
@@ -362,21 +373,17 @@ class Battle {
                 const spriteRow = parseInt(this.attackRenderTimestamp / skillInfo.col);
                 const spriteCol = this.attackRenderTimestamp % skillInfo.col;
 
-                const spriteSize = {
-                    width: 192,
-                    height: 192
-                }
+                const drawWeight = 15;
 
                 this.ctx.drawImage(
                     skillInfo.imageInfo,
                     skillInfo.spriteSize.width * spriteCol,
                     skillInfo.spriteSize.height * spriteRow,
-                    spriteSize.width, spriteSize.height,
-                    (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * targetIndex),
-                    this.UIContainer.top + 30,
-                    64,
-                    64
-                    // 0, 0, 640, 640
+                    skillInfo.spriteSize.width, skillInfo.spriteSize.height,
+                    (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * targetIndex) - drawWeight,
+                    this.UIContainer.top + 30 - drawWeight,
+                    64 + 2 * drawWeight,
+                    64 + 2 * drawWeight
                 );
 
                 setTimeout(resolve, 3000);
@@ -529,13 +536,11 @@ class Battle {
             // console.log(attackInfo)
             // console.log(`===========================================`)
 
-            if (magicScenario.value) {
-                await this._commandActionToPlayer({
-                    target: targetCharacter,
-                    scenario: magicScenario,
-                    moveType: `Magic`
-                });
-            }
+            await this._commandActionToPlayer({
+                target: targetCharacter,
+                scenario: magicScenario,
+                moveType: magicScenario.action
+            });
 
             // After effect rendering end
             this.UIMode = UI_MODE.ATTACK_RESULT;
