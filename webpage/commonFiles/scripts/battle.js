@@ -165,7 +165,6 @@ class Battle {
                 //     attackInfo = this.AttackEffect[scenario.attackName];
                 //     break;
                 case `Magic_Heal`:
-
                     // console.log(`numOfFrames        : `, numOfFrames)
                     // console.log(`diffHPPerFrame : `, diffHPPerFrame)
                     while (remainHPDiff > 0) {
@@ -237,6 +236,11 @@ class Battle {
             if (scenario.damage === 0) {
                 console.log(`Avoid attack`);
                 this.renderingTextInUI = `${enemy.name} avoid!`;
+            } else if (attackInfo.critical === true) {
+                this.renderingTextInUI = [
+                    `Critical hit!`,
+                    `${enemy.name} got ${scenario.damage} damage(s)!`
+                ];
             } else {
                 this.renderingTextInUI = `${enemy.name} got ${scenario.damage} damage(s)!`;
             }
@@ -247,8 +251,8 @@ class Battle {
             let remainHPDiff = scenario.damage;
             const numOfFrames = Math.floor(1000 / FPS);
             const decreaseHPPerFrame = Math.ceil(scenario.damage / numOfFrames);
-            console.log(`numOfFrames        : `, numOfFrames)
-            console.log(`decreaseHPPerFrame : `, decreaseHPPerFrame)
+            // console.log(`numOfFrames        : `, numOfFrames)
+            // console.log(`decreaseHPPerFrame : `, decreaseHPPerFrame)
             while (remainHPDiff > 0) {
                 remainHPDiff = remainHPDiff - decreaseHPPerFrame;
                 enemy.isAttacking = true;
@@ -300,6 +304,7 @@ class Battle {
             this.currentAttackName = attackScenario.attackName;
             this.currentAttackTarget = attackScenario.to;
             const attackInfo = this.AttackEffect[attackScenario.attackName];
+            console.log(`attackInfo : `, attackInfo)
 
             if (attackInfo.type === `Normal`) {
                 this.renderingTextInUI = `${attackScenario.from} attacks ${enemyName}!`;
@@ -339,8 +344,8 @@ class Battle {
             //     base.x, base.y, attackInfo.spriteSize.width, attackInfo.spriteSize.height);
 
             const spriteSize = {
-                width: 128,
-                height: 128
+                width: attackInfo.spriteSize.width,
+                height: attackInfo.spriteSize.height
             }
 
             if (`renderStartPosition` in attackInfo) {
@@ -478,39 +483,6 @@ class Battle {
         });
     }
 
-
-    // async attackEnemy(attackScenario) {
-    //     return new Promise(async (resolve, reject) => {
-    //         const enemy = this.findEnemyInfoByIndex(attackScenario.to);
-    //         const enemyName = enemy.name;
-
-    //         if (enemy.remainHP <= 0) {
-    //             console.warn(`Enemy ${enemy.name} already dead.`);
-    //         }
-
-    //         this.attackRenderTimestamp = 0;
-    //         this.currentAttackName = attackScenario.attackName;
-    //         this.currentAttackTarget = attackScenario.to;
-    //         const attackInfo = this.AttackEffect[attackScenario.attackName];
-
-    //         if (attackInfo.type === `Normal`) {
-    //             this.renderingTextInUI = `${attackScenario.from} attacks ${enemyName}!`;
-    //         }
-
-    //         await this._reduceRemainHP({
-    //             enemy,
-    //             scenario: attackScenario,
-    //             attackType: `Attack`
-    //         });
-
-    //         setTimeout(() => {
-    //             this.renderingTextInUI = ``;
-    //             this.attackRenderTimestamp = 0;
-    //             resolve();
-    //         }, 1000);
-    //     });
-    // }
-
     async useMagicBuff(magicScenario) {
         console.log(`useMagicBuff() :`, magicScenario);
         return new Promise(async (resolve, reject) => {
@@ -639,6 +611,15 @@ class Battle {
         });
     }
 
+    findPlayerIndexByName(name) {
+        for (let idx = 0; idx < this.PlayerList.length; idx++) {
+            if (name === this.PlayerList[idx].name) {
+                return idx;
+            }
+        }
+        return null;
+    }
+
     findPlayerInfoByIndex(idx) {
         return this.PlayerList[idx];
     }
@@ -692,7 +673,7 @@ class Battle {
                     this.UIContainer.borderRadius
                 );
                 if (targetCharacterIndex === idx) {
-                    this.ctx.strokeStyle = `#CCFFCC`;
+                    this.ctx.strokeStyle = `#00FF00`;
                 } else {
                     this.ctx.strokeStyle = `#CCCCCC`;
                 }
@@ -832,7 +813,8 @@ class Battle {
         }
     }
 
-    async moveCharacterSelect(targetIndex) {
+    async moveCharacterSelect(targetName) {
+        const targetIndex = this.findPlayerIndexByName(targetName);
         return new Promise(async (resolve, reject) => {
             let diff = 0;
             if (this.selectedCharacterIndex < targetIndex) {
@@ -844,7 +826,7 @@ class Battle {
             }
 
             while (this.selectedCharacterIndex !== targetIndex) {
-                // console.log(` while this.selectedEnemyIndex : `, this.selectedEnemyIndex)
+                console.log(` while this.moveCharacterSelect : `, this.selectedCharacterIndex)
                 await (() => {
                     return new Promise((_resolve, _reject) => {
                         setTimeout(() => {
