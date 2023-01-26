@@ -8,12 +8,19 @@
             border: 0
         }
 
-        div#container {
+        div#container,
+        div#blackOverlay {
             position: absolute;
             margin: 50px;
             width: 640px;
             height: 640px;
             background-color: black;
+        }
+
+        div#blackOverlay {
+            position: absolute;
+            background-color: black;
+            opacity: 0;
         }
 
         div#timer {
@@ -33,6 +40,7 @@
             width: 640px;
             height: 50px;
         }
+
         audio {
             position: absolute;
             top: 50px;
@@ -53,6 +61,8 @@
 
     <div id="audioTimer"></div>
     <audio id="bgm" controls></audio>
+    <div id="blackOverlay"></div>
+
 </body>
 
 

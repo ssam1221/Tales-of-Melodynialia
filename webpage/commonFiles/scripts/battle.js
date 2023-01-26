@@ -16,7 +16,8 @@ const UI_MODE = {
     ITEM: `ITEM`,
     MAGIC: `MAGIC`,
     BATTLE_WIN: `BATTLE_WIN`,
-    BATTLE_DEFEAT: `BATTLE_DEFEAT`
+    BATTLE_DEFEAT: `BATTLE_DEFEAT`,
+    GAME_OVER: `GAME_OVER`
 }
 
 let timerInterval = 0;
@@ -40,6 +41,9 @@ class Battle {
         return new Promise((resolve, reject) => {
             this.backgroundImageInstance = new Image();
             this.backgroundImageInstance.src = background;
+
+            this.gameoverImage = new Image();
+            this.gameoverImage.src = `../commonFiles/image/Gameover.png`;
 
             this.battleOptions = battleOptions;
             this.drawWeight = battleOptions.drawWeight ?? 1;
@@ -174,6 +178,9 @@ class Battle {
                                 setTimeout(() => {
                                     this.attackRenderTimestamp++;
                                     target.remainHP = target.remainHP + diffHPPerFrame;
+                                    if (target.remainHP > target.HP) {
+                                        target.remainHP = target.HP;
+                                    }
                                     _resolve();
                                 }, 3 * 1000 / FPS);
                             });
@@ -751,10 +758,21 @@ class Battle {
 
                 // Render portrait and info
                 this.ctx.fillStyle = `#FFFFFF`
-                this.ctx.drawImage(character.imageInfo[0],
-                    (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
-                    this.UIContainer.top + 30,
-                    64, 64);
+                if (character.remainHP > 0) {
+                    this.ctx.drawImage(character.imageInfo[0],
+                        (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                        this.UIContainer.top + 30,
+                        64, 64);
+                }
+                // Player fainted
+                else {
+                    this.ctx.filter = `grayscale(100%)`;
+                    this.ctx.drawImage(character.imageInfo[0],
+                        (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                        this.UIContainer.top + 30,
+                        64, 64);
+                }
+                this.ctx.filter = `none`;
 
 
                 this.ctx.font = `10px Arial`;
@@ -1135,13 +1153,24 @@ class Battle {
                     this.ctx.fill()
                     this.ctx.stroke();
 
+
                     // Render portrait and info
                     this.ctx.fillStyle = `#FFFFFF`
-                    this.ctx.drawImage(character.imageInfo[0],
-                        (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
-                        this.UIContainer.top + 30,
-                        64, 64);
-
+                    if (character.remainHP > 0) {
+                        this.ctx.drawImage(character.imageInfo[0],
+                            (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                            this.UIContainer.top + 30,
+                            64, 64);
+                    }
+                    // Player fainted
+                    else {
+                        this.ctx.filter = `grayscale(100%)`;
+                        this.ctx.drawImage(character.imageInfo[0],
+                            (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                            this.UIContainer.top + 30,
+                            64, 64);
+                    }
+                    this.ctx.filter = `none`;
 
                     this.ctx.font = `10px Arial`;
                     const hpmpText = {
@@ -1340,8 +1369,12 @@ class Battle {
                 //     enemy.drawStartPos.y + 170
                 // );
 
-
-                this.ctx.globalAlpha = 1;
+                if (
+                    (this.UIMode !== UI_MODE.BATTLE_DEFEAT) &&
+                    (this.UIMode !== UI_MODE.GAME_OVER)
+                ) {
+                    this.ctx.globalAlpha = 1;
+                }
             }
 
             // Draw emeny image
@@ -1381,6 +1414,57 @@ class Battle {
 
             }
         }
+    }
+
+    async setGameoverAlpha() {
+        return new Promise(async (resolve, reject) => {
+
+            let alphaValue = 0;
+            const fadeinCanvas = async () => {
+                return new Promise((_resolve, _reject) => {
+                    const fadeinInterval = setInterval(() => {
+                        this.ctx.globalAlpha = alphaValue;
+                        alphaValue += 0.01;
+                        console.log(` this.ctx.globalAlpha 2 : `, this.ctx.globalAlpha)
+                        if (alphaValue > 1) {
+                            alphaValue = 1;
+                            _resolve();
+                            clearInterval(fadeinInterval);
+                        }
+                    }, 50);
+                });
+            }
+            const fadeoutCanvas = async () => {
+                return new Promise((_resolve, _reject) => {
+                    const fadeoutInterval = setInterval(() => {
+                        this.ctx.globalAlpha = alphaValue;
+                        alphaValue -= 0.01;
+                        console.log(` this.ctx.globalAlpha 3 : `, this.ctx.globalAlpha)
+                        if (alphaValue < 0) {
+                            alphaValue = 0;
+                            _resolve();
+                            clearInterval(fadeoutInterval);
+                        }
+                    }, 50);
+                });
+            }
+
+            await fadeinCanvas();
+            await sleep(2000);
+            await fadeoutCanvas();
+            resolve();
+        })
+    }
+
+    async renderGameover() {
+        return new Promise(async (resolve, reject) => {
+            if (this.UIMode === UI_MODE.GAME_OVER) {
+                this.ctx.clearRect(0, 0, 640, 640);
+                this.ctx.drawImage(this.gameoverImage,
+                    0, 0, 640, 640);
+            }
+            resolve();
+        });
     }
 
     drawMenuText() {
@@ -1436,7 +1520,7 @@ class Battle {
         return ret;
     }
 
-    async setBattleEndText() {
+    async setBattleWinText() {
         return new Promise(async (resolve, reject) => {
             if (this.UIMode === UI_MODE.BATTLE_WIN) {
                 if (this.isBattleEndTextRendering === false) {
@@ -1461,10 +1545,59 @@ class Battle {
 
                 } else {
                     console.log(this.renderingTextInUI)
-                    // if (Array.isArray(this.renderingTextInUI)) {
-                    //     this.renderingTextInUI = this.renderingTextInUI.join('\n');
-                    // }
-                    // this.renderTextInUI(this.renderingTextInUI);
+                }
+
+                await sleep(2000);
+                resolve();
+            }
+        });
+    }
+
+    async setBattleDefeatText() {
+        return new Promise(async (resolve, reject) => {
+            if (this.UIMode === UI_MODE.BATTLE_DEFEAT) {
+                if (this.isBattleEndTextRendering === false) {
+                    this.isBattleEndTextRendering = true;
+
+                    let alphaValue = 1;
+                    const fadeoutCanvas = () => {
+                        this.ctx.globalAlpha = alphaValue;
+                        alphaValue -= 0.01;
+                        if (alphaValue < 0) {
+                            alphaValue = 0;
+                        }
+                    }
+
+                    while (alphaValue > 0) {
+                        await (() => {
+                            console.log(` this.ctx.globalAlpha  : `, this.ctx.globalAlpha)
+                            return new Promise((_resolve, _reject) => {
+                                setTimeout(() => {
+                                    fadeoutCanvas();
+                                    _resolve();
+                                }, 40)
+                            })
+                        })();
+                    }
+
+
+                    let textArr = [];
+                    textArr.push(`You lose...`);
+                    // this.renderTextInUI(textArr);
+                    // this.renderingTextInUI = [
+                    //     ...textArr];
+                    // await sleep(500);
+                    // textArr.push(`Got ${awards.Gold} Gold!`);
+                    // this.renderingTextInUI = [
+                    //     ...textArr];
+                    // await sleep(500);
+                    // textArr.push(`Got ${awards.EXP} EXP!`);
+                    // this.renderingTextInUI = [
+                    //     ...textArr];
+                    // await sleep(500);
+
+                } else {
+                    console.log(this.renderingTextInUI)
                 }
                 await sleep(2000);
                 resolve();
@@ -1493,6 +1626,13 @@ class Battle {
             }
             this.renderingTextInUI = `${scenario.to} got ${scenario.damage} damage(s)!`;
             this.findPlayerInfoByName(scenario.to).remainHP -= scenario.damage;
+            if (this.findPlayerInfoByName(scenario.to).remainHP < 0) {
+                this.findPlayerInfoByName(scenario.to).remainHP = 0;
+                this.renderingTextInUI = [
+                    `${scenario.to} got ${scenario.damage} damage(s)!`,
+                    `${scenario.to} fainted!`,
+                ]
+            }
         } else {
             await sleep(1500);
             this.renderingTextInUI = `${scenario.to} avoid!`;
@@ -1575,9 +1715,31 @@ class Battle {
                         break;
                     }
                 }
-                // console.log(`Battle phase done : `, scenario);
+
+
+                console.log(`Battle phase done : `);
+
+                let remainPlayersHP = 0;
+                for (const player of this.PlayerList) {
+                    console.log(`Player [${player.name}] : `);
+                    console.log(`     HP : ${player.remainHP}/${player.HP}`);
+                    console.log(`     HP : ${player.remainMP}/${player.MP}`);
+                    remainPlayersHP += player.remainHP;
+                }
+                for (const enemy of this.enemiesList) {
+                    console.log(`Enemy [${enemy.name}] : `);
+                    console.log(`     HP : ${enemy.remainHP}/${enemy.HP}`);
+                }
+                if (remainPlayersHP <= 0) {
+                    console.log(`Game over`);
+                    await this.defeatAndGameover();
+                    resolve();
+                    break;
+                }
+                console.log(`Battle phase done : ########################## `);
+
             }
-            console.log(`Battle all scenario done`);
+            console.log(`Battle all scenario done.`);
             // endTimer();
             this.end();
             resolve();
@@ -1646,7 +1808,11 @@ class Battle {
 
     async animate() {
         this.animationInterval = setInterval(async () => {
-            this.startRenderBasicUIs();
+
+            if (this.UIMode !== UI_MODE.GAME_OVER) {
+                this.startRenderBasicUIs();
+            }
+
             if (this.UIMode === UI_MODE.BATTLE_MENU) {
                 this.drawMenuText();
                 this.renderPlayerCharacterInUI();
@@ -1667,6 +1833,10 @@ class Battle {
                 this.renderTextInUI();
             } else if (this.UIMode === UI_MODE.BATTLE_WIN) {
                 this.renderTextInUI();
+            } else if (this.UIMode === UI_MODE.BATTLE_DEFEAT) {
+                this.renderTextInUI();
+            } else if (this.UIMode === UI_MODE.GAME_OVER) {
+                this.renderGameover();
             }
         }, 1000 / FPS);
     }
@@ -1706,6 +1876,23 @@ class Battle {
         window.requestAnimationFrame(startPixelate);
     }
 
+    async defeatAndGameover() {
+        return new Promise(async (resolve, reject) => {
+            this.UIMode = UI_MODE.BATTLE_DEFEAT;
+            await this.setBattleDefeatText();
+
+            this.UIMode = UI_MODE.GAME_OVER;
+            await this.setGameoverAlpha();
+
+            this.isBattleEnd = true;
+            clearInterval(this.animationInterval);
+            this.ctx.clearRect(0, 0, 640, 640);
+            console.log(`Battle complete.`);
+            endTimer();
+            resolve();
+        });
+    }
+
     async end() {
         return new Promise(async (resolve, reject) => {
             const pixelateCount = 48;
@@ -1730,7 +1917,7 @@ class Battle {
                     resolve();
                 }
             }
-            await this.setBattleEndText();
+            await this.setBattleWinText();
             window.requestAnimationFrame(startPixelate);
         });
     }

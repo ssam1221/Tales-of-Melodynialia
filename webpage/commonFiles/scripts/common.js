@@ -1,6 +1,7 @@
 const startTime = new Date().getTime();
 const logoConatainer = document.getElementById(`logo`);
 const logoImage = document.getElementById(`logoImg`);
+const blackOverlay = document.getElementById(`blackOverlay`);
 
 // Logo
 function fadeOutLogo(targetOpacity = 0) {
@@ -81,6 +82,7 @@ async function loadAudio(BGM_NAME) {
 
         if (BGM_NAME !== null) {
             bgm.src = `../mp3/${BGM_NAME}`
+            bgm.volume = 0.2;
             bgm.load();
             bgm.play();
             bgm.onplay = (() => {
