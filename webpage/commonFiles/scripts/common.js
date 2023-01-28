@@ -39,6 +39,7 @@ function setLogoSize(width, height) {
 }
 
 // Timer
+let gameplayTimer = 0;
 function startTimer() {
     let diff;
     if (typeof NPC === `object` && NPC._DEBUG_SET_SCENARIO_INDEX_ENABLED !== false) {
@@ -66,15 +67,17 @@ function fadeInBlackOverlay(targetOpacity = 0) {
 }
 
 function fadeOutBlackOverlay(targetOpacity = 0) {
-    if (blackOverlay.style.opacity === ``) {
-        blackOverlay.style.opacity = 0;
-    }
-    const fadeOutBlackOverlayInterval = setInterval(() => {
-        if (blackOverlay.style.opacity >= targetOpacity) {
-            clearInterval(fadeOutBlackOverlayInterval);
+    if (blackOverlay) {
+        if (blackOverlay.style.opacity === ``) {
+            blackOverlay.style.opacity = 0;
         }
-        blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) + 0.02;
-    }, 30);
+        const fadeOutBlackOverlayInterval = setInterval(() => {
+            if (blackOverlay.style.opacity >= targetOpacity) {
+                clearInterval(fadeOutBlackOverlayInterval);
+            }
+            blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) + 0.02;
+        }, 30);
+    }
 }
 
 async function loadAudio(BGM_NAME) {
@@ -86,7 +89,7 @@ async function loadAudio(BGM_NAME) {
             bgm.load();
             bgm.play();
             bgm.onplay = (() => {
-                setInterval(startTimer, 10);
+                gameplayTimer = setInterval(startTimer, 10);
                 resolve();
             });
             bgm.onended = fadeOutBlackOverlay;
