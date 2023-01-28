@@ -4,6 +4,7 @@ const ARROW_MOVE_SPEED = 600;
 const UI_MODE = {
     NONE: `NONE`,
     TEXT: `TEXT`,
+    BATTLE_START: `BATTLE_START`,
     BATTLE_MENU: `BATTLE_MENU`,
     ATTACK: `ATTACK`,
     MAGIC_SELECT: `MAGIC_SELECT`,
@@ -17,7 +18,8 @@ const UI_MODE = {
     MAGIC: `MAGIC`,
     BATTLE_WIN: `BATTLE_WIN`,
     BATTLE_DEFEAT: `BATTLE_DEFEAT`,
-    GAME_OVER: `GAME_OVER`
+    GAME_OVER: `GAME_OVER`,
+    PHASE_CHANGE: `PHASE_CHANGE`
 }
 
 let timerInterval = 0;
@@ -30,6 +32,7 @@ async function sleep(timer = 1000) {
 
 function endTimer() {
     console.log(`All Battle scenario end.`);
+    clearInterval(gameplayTimer);
     clearInterval(timerInterval);
 }
 
@@ -61,7 +64,7 @@ class Battle {
 
             // UI Render Mode
             // Text | BattleMenu | Attack | EmenySelect | Item | Magic ...
-            this.UIMode = UI_MODE.TEXT;
+            this.UIMode = UI_MODE.BATTLE_START;
 
             this.renderingTextInUI = ``;
             this.selectedMagic = 0;
@@ -243,7 +246,7 @@ class Battle {
             if (scenario.damage === 0) {
                 console.log(`Avoid attack`);
                 this.renderingTextInUI = `${enemy.name} avoid!`;
-            } else if (attackInfo.critical === true) {
+            } else if (scenario.critical === true) {
                 this.renderingTextInUI = [
                     `Critical hit!`,
                     `${enemy.name} got ${scenario.damage} damage(s)!`
@@ -759,7 +762,7 @@ class Battle {
                 // Render portrait and info
                 this.ctx.fillStyle = `#FFFFFF`
                 if (character.remainHP > 0) {
-                    this.ctx.drawImage(character.imageInfo[0],
+                    this.ctx.drawImage(character.imageInfo[character.currentPhase],
                         (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
                         this.UIContainer.top + 30,
                         64, 64);
@@ -767,7 +770,7 @@ class Battle {
                 // Player fainted
                 else {
                     this.ctx.filter = `grayscale(100%)`;
-                    this.ctx.drawImage(character.imageInfo[0],
+                    this.ctx.drawImage(character.imageInfo[character.currentPhase],
                         (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
                         this.UIContainer.top + 30,
                         64, 64);
@@ -995,6 +998,7 @@ class Battle {
                 }];
             }
 
+            charInfo.currentPhase = 0;
             let isLoadedCount = 0;
 
             for (let i = 0; i < charInfo.phaseInfo.length; i++) {
@@ -1157,7 +1161,7 @@ class Battle {
                     // Render portrait and info
                     this.ctx.fillStyle = `#FFFFFF`
                     if (character.remainHP > 0) {
-                        this.ctx.drawImage(character.imageInfo[0],
+                        this.ctx.drawImage(character.imageInfo[character.currentPhase],
                             (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
                             this.UIContainer.top + 30,
                             64, 64);
@@ -1165,7 +1169,7 @@ class Battle {
                     // Player fainted
                     else {
                         this.ctx.filter = `grayscale(100%)`;
-                        this.ctx.drawImage(character.imageInfo[0],
+                        this.ctx.drawImage(character.imageInfo[character.currentPhase],
                             (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
                             this.UIContainer.top + 30,
                             64, 64);
@@ -1217,7 +1221,7 @@ class Battle {
                     }
                     this.ctx.fill();
 
-                    this.ctx.drawImage(character.imageInfo[0],
+                    this.ctx.drawImage(character.imageInfo[character.currentPhase],
                         (this.UIContainer.left + 10) + (67 * idx),
                         this.UIContainer.top - 60,
                         48, 48
@@ -1381,10 +1385,11 @@ class Battle {
             // this.ctx.globalCompositeOperation = "source-over";
             const isJump = this.isBattleStart ? 2 : 1;
 
-            const remainHPPercentage = (enemy.remainHP / enemy.HP) * 100;
-            let targetEnemyImageInfo = enemy.imageInfo.reverse().find(
-                (imgInfo) => { return imgInfo.phaseInfo.remainHP >= remainHPPercentage }
-            );
+            let targetEnemyImageInfo = enemy.imageInfo[enemy.currentPhase];
+            // const remainHPPercentage = (enemy.remainHP / enemy.HP) * 100;
+            // let targetEnemyImageInfo = enemy.imageInfo.reverse().find(
+            //     (imgInfo) => { return imgInfo.phaseInfo.remainHP >= remainHPPercentage }
+            // );
 
             if (enemy.status === `Deading`) {
                 if (enemy.opacity <= 0) {
@@ -1425,7 +1430,6 @@ class Battle {
                     const fadeinInterval = setInterval(() => {
                         this.ctx.globalAlpha = alphaValue;
                         alphaValue += 0.01;
-                        console.log(` this.ctx.globalAlpha 2 : `, this.ctx.globalAlpha)
                         if (alphaValue > 1) {
                             alphaValue = 1;
                             _resolve();
@@ -1439,7 +1443,6 @@ class Battle {
                     const fadeoutInterval = setInterval(() => {
                         this.ctx.globalAlpha = alphaValue;
                         alphaValue -= 0.01;
-                        console.log(` this.ctx.globalAlpha 3 : `, this.ctx.globalAlpha)
                         if (alphaValue < 0) {
                             alphaValue = 0;
                             _resolve();
@@ -1497,7 +1500,7 @@ class Battle {
     }
 
     renderBattleStartText() {
-        if (this.UIMode === UI_MODE.TEXT) {
+        if (this.UIMode === UI_MODE.BATTLE_START) {
             let text = ``;
             if (this.enemiesList.length === 1) {
                 text = `The ${this.enemiesList[0].name} is appeared!`
@@ -1570,7 +1573,6 @@ class Battle {
 
                     while (alphaValue > 0) {
                         await (() => {
-                            console.log(` this.ctx.globalAlpha  : `, this.ctx.globalAlpha)
                             return new Promise((_resolve, _reject) => {
                                 setTimeout(() => {
                                     fadeoutCanvas();
@@ -1624,7 +1626,15 @@ class Battle {
                     });
                 })();
             }
-            this.renderingTextInUI = `${scenario.to} got ${scenario.damage} damage(s)!`;
+            if (scenario.critical === true) {
+                this.renderingTextInUI = [
+                    `Critical hit!`,
+                    `${scenario.to} got ${scenario.damage} damage(s)!`
+                ];
+            }
+            else {
+                this.renderingTextInUI = `${scenario.to} got ${scenario.damage} damage(s)!`;
+            }
             this.findPlayerInfoByName(scenario.to).remainHP -= scenario.damage;
             if (this.findPlayerInfoByName(scenario.to).remainHP < 0) {
                 this.findPlayerInfoByName(scenario.to).remainHP = 0;
@@ -1639,6 +1649,23 @@ class Battle {
         }
 
         this.screenShakedEffectDistance = 0;
+        await sleep(1500);
+    }
+
+    async showTextOnly(scenario) {
+        if (this.UIMode = UI_MODE.TEXT) {
+            this.renderingTextInUI = scenario.description;
+            await sleep(1500);
+        }
+    }
+
+    async phaseChange(scenario) {
+        this.renderingTextInUI = scenario.description;
+        const target = this.findEnemyInfoByIndex(scenario.from);
+        target.currentPhase++;
+        console.log(`Phase ${target.name} chaged to [${target.currentPhase}]`, target.phaseInfo[target.currentPhase]);
+
+        // phaseInfo[]
         await sleep(1500);
     }
 
@@ -1712,6 +1739,17 @@ class Battle {
                         this.UIMode = UI_MODE.ATTACK_BY_ENEMY;
                         await this.attackedByEnemy(scenario);
                         this.UIMode = UI_MODE.BATTLE_MENU;
+                        break;
+                    }
+
+                    case `Phase`: {
+                        this.UIMode = UI_MODE.PHASE_CHANGE;
+                        await this.phaseChange(scenario);
+                        break;
+                    }
+                    case `Text`: {
+                        this.UIMode = UI_MODE.TEXT;
+                        await this.showTextOnly(scenario);
                         break;
                     }
                 }
@@ -1837,6 +1875,8 @@ class Battle {
                 this.renderTextInUI();
             } else if (this.UIMode === UI_MODE.GAME_OVER) {
                 this.renderGameover();
+            } else if (this.UIMode === UI_MODE.PHASE_CHANGE) {
+                this.renderTextInUI();
             }
         }, 1000 / FPS);
     }
