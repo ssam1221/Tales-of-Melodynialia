@@ -15,7 +15,10 @@ window.onload = async () => {
     if (location.href.includes(`AristinaleVillage`)) {
         await loadScript(`scripts/AristinaleVillage.js`);
     }
-    if (location.href.includes(`Tavern1`)) {
+    else if (location.href.includes(`Tavern1`)) {
         await loadScript(`scripts/Tavern1.js`);
+    }
+    else if (location.href.includes(`Desert1`)) {
+        await loadScript(`scripts/Desert1.js`);
     }
 }

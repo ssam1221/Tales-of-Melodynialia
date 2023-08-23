@@ -56,7 +56,14 @@ class NPC {
 
     constructor(filename, options = {}) {
         return new Promise((resolve, reject) => {
-            this.canvas = document.getElementById(`mapCanvas`);
+
+            if (options?.targetCanvas) {
+                this.canvas = document.getElementById(options?.targetCanvas);
+            }
+            else {
+                this.canvas = document.getElementById(`mapCanvas`);
+            }
+
             this.container = document.getElementById(`container`);
 
             this.options = options;
@@ -218,6 +225,13 @@ class NPC {
 
     }
 
+    getPosition() {
+        return {
+            x: 0,
+            y: 0
+        }
+    }
+
     setPosition(x, y, timestamp = 0) {
         if ((typeof x !== `number`) || (typeof y !== `number`)) {
             throw new Error(`${this.img}.setPosition() : invalid position value : (${x}, ${y}, ${timestamp})`);
@@ -312,11 +326,10 @@ class NPC {
         this._currentDelay = (this._currentDelay + 1) % this.animationDelay;
 
         if (this._currentDelay === 0) {
-            if (this.distance === 0) {}
+            if (this.distance === 0) { }
 
             if (this.pattern !== `n`) {
                 this.spriteImageIndex = ++this.spriteImageIndex % SPRITE_ORDER.length;
-
                 if (this.pattern === `h`) {
                     if (this.distance === 0) {
                         this.renderPosition.x = this.renderPosition.x;
@@ -396,7 +409,7 @@ class NPC {
             this.renderPosition.y = positionInfo.y;
 
             if ((this.positionList[this.currentPositionListIndex + 1] &&
-                    this.positionList[this.currentPositionListIndex + 1].timestamp <= this.timestamp) &&
+                this.positionList[this.currentPositionListIndex + 1].timestamp <= this.timestamp) &&
                 (this.positionList.length - 1 > this.currentPositionListIndex)) {
                 this.currentPositionListIndex++;
             }
