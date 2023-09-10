@@ -258,6 +258,14 @@ class NPC {
             y,
             timestamp
         });
+
+        if (this.used === false) {
+            this.originalPosition.x = this.positionList[0].x;
+            this.originalPosition.y = this.positionList[0].y;
+            this.renderPosition.x = this.positionList[0].x;
+            this.renderPosition.y = this.positionList[0].y;
+        }
+
         this.used = true;
     }
 
@@ -267,7 +275,7 @@ class NPC {
             NPC.shadowImage.naturalWidth * zoomRatio,
             NPC.shadowImage.naturalHeight * zoomRatio,
             x * zoomRatio,
-            y+2 * zoomRatio,
+            y + 2 * zoomRatio,
             width * zoomRatio,
             height * zoomRatio);
 
@@ -413,7 +421,6 @@ class NPC {
                             }
                         } else {
                             this.renderPosition.y -= this.speed;
-
                             if (this.originalPosition.y + this.distance > this.renderPosition.y) {
                                 this.direction = SPRITE_DIRECTION.DOWN;
                             }
@@ -435,10 +442,13 @@ class NPC {
             // }
             // this.currentPositionRenderingIndex = this.currentPositionListIndex
             const positionInfo = this.positionList[this.currentPositionListIndex];
-            this.originalPosition.x = positionInfo.x;
-            this.originalPosition.y = positionInfo.y;
-            this.renderPosition.x = positionInfo.x;
-            this.renderPosition.y = positionInfo.y;
+
+            if (this.positionList.length > 1) {
+                this.originalPosition.x = positionInfo.x;
+                this.originalPosition.y = positionInfo.y;
+                this.renderPosition.x = positionInfo.x;
+                this.renderPosition.y = positionInfo.y;
+            }
 
             if ((this.positionList[this.currentPositionListIndex + 1] &&
                 this.positionList[this.currentPositionListIndex + 1].timestamp <= this.timestamp) &&
@@ -448,7 +458,9 @@ class NPC {
         }
 
         // Event related
-        if (this.timestampEvent[this.timestampEventIndex] &&
+        if (
+            this.timestampEvent.length > 1 &&
+            this.timestampEvent[this.timestampEventIndex] &&
             this.timestampEvent[this.timestampEventIndex].timestamp <= this.timestamp) {
             // if (this.img.includes(`Male_A`)) {
             //     console.log(`[${this.timestamp}] Event : `, this.timestampEvent[this.timestampEventIndex])
