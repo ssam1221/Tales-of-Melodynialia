@@ -21,4 +21,7 @@ window.onload = async () => {
     else if (location.href.includes(`Desert1`)) {
         await loadScript(`scripts/Desert1.js`);
     }
+    else if (location.href.includes(`WheastlynCountryside`)) {
+        await loadScript(`scripts/WheastlynCountryside.js`);
+    }
 }
