@@ -28,6 +28,8 @@ class NPC {
     static DIRECTION = SPRITE_DIRECTION;
 
     static mapImage = new Image();
+    static shadowImage = new Image();
+
     static async setMapImage(src) {
         console.log(`Load map image : `, src)
         return new Promise((resolve, reject) => {
@@ -36,6 +38,21 @@ class NPC {
 
                 this.mapImage.onload = () => {
                     console.log(`Load map image : done`);
+                    resolve();
+                };
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+    static async setShadowImage(src) {
+        console.log(`Load shadow image : `, src)
+        return new Promise((resolve, reject) => {
+            try {
+                this.shadowImage.src = src;
+
+                this.shadowImage.onload = () => {
+                    console.log(`Load shadow image : done`);
                     resolve();
                 };
             } catch (err) {
@@ -244,6 +261,18 @@ class NPC {
         this.used = true;
     }
 
+    drawShadow({ x, y, width, height }) {
+        this.ctx.drawImage(NPC.shadowImage,
+            0, 0,
+            NPC.shadowImage.naturalWidth * zoomRatio,
+            NPC.shadowImage.naturalHeight * zoomRatio,
+            x * zoomRatio,
+            y+2 * zoomRatio,
+            width * zoomRatio,
+            height * zoomRatio);
+
+    }
+
     setMovingPattern(pattern, distance) {
         this.pattern = pattern;
         this.distance = distance;
@@ -395,6 +424,9 @@ class NPC {
         }
         // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+
+        // Shadow
+
         // Position related
         if (this.positionList[this.currentPositionListIndex] &&
             this.positionList[this.currentPositionListIndex].timestamp <= this.timestamp) {
@@ -455,6 +487,12 @@ class NPC {
 
         this.ctx.save();
         this.ctx.globalAlpha = this.opacity;
+        this.drawShadow({
+            x: this.renderPosition.x,
+            y: this.renderPosition.y,
+            width: this.spriteSize.width,
+            height: this.spriteSize.height
+        });
         if (this.options.type === `animateItem`) {
             const col = this.animateOrderIndex % this.options.sprite.col;
             const row = parseInt(this.animateOrderIndex / this.options.sprite.col);
