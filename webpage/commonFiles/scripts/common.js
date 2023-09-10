@@ -60,6 +60,7 @@ function fadeInBlackOverlay(targetOpacity = 0) {
     }
     const fadeOutBlackOverlayInterval = setInterval(() => {
         if (blackOverlay.style.opacity <= targetOpacity) {
+            blackOverlay.style.display = `none`;
             clearInterval(fadeOutBlackOverlayInterval);
         }
         blackOverlay.style.opacity = parseFloat(blackOverlay.style.opacity) - 0.02;
@@ -68,6 +69,7 @@ function fadeInBlackOverlay(targetOpacity = 0) {
 
 function fadeOutBlackOverlay(targetOpacity = 0) {
     if (blackOverlay) {
+        blackOverlay.style.display = `block`;
         if (blackOverlay.style.opacity === ``) {
             blackOverlay.style.opacity = 0;
         }
@@ -85,7 +87,7 @@ async function loadAudio(BGM_NAME) {
 
         if (BGM_NAME !== null) {
             bgm.src = `../mp3/${BGM_NAME}`
-            bgm.volume = 0.2;
+            bgm.volume = 1.0
             bgm.load();
             bgm.play();
             bgm.onplay = (() => {
@@ -98,4 +100,27 @@ async function loadAudio(BGM_NAME) {
             resolve();
         }
     })
+}
+
+function printMousePointerPosition() {
+
+    const rect = document.getElementById(`mapCanvas`).getBoundingClientRect();
+
+    for (const key in rect) {
+        document.getElementById(`mousePositionOverlay`).style[key] = rect[key];
+    }
+
+    console.log(`printMousePointerPosition`);
+
+
+    document.getElementById(`mousePositionOverlay`).onmouseleave = (e) => {
+        document.getElementById(`mousePosition`).style.display = `none`
+
+    }
+    document.getElementById(`mousePositionOverlay`).onmousemove = (e) => {
+        document.getElementById(`mousePosition`).style.display = `block`
+        document.getElementById(`mousePosition`).innerHTML = `${e.offsetX}, ${e.offsetY}`;
+        document.getElementById(`mousePosition`).style.left = `${e.offsetX}px`;
+        document.getElementById(`mousePosition`).style.top = `${e.offsetY}px`;
+    }
 }

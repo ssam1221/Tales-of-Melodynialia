@@ -103,6 +103,19 @@
             height: 80%;
             object-fit: contain;
         }
+
+        div#mousePosition {
+            position: absolute;
+            width: 100px;
+            height: 20px;
+            border: 2px solid black;
+            background-color: #cccccc
+        }
+
+        div#mousePositionOverlay {
+            position: absolute;
+            z-index: 9999999;
+        }
     </style>
     <script src="npc.js"> </script>
     <script src="main.js"> </script>
@@ -128,10 +141,13 @@
     <div id="test">
         <!-- <img id="testImg"> -->
     </div>
-    <audio id="bgm" controls muted></audio>
-    <div id="logo">
+    <audio id="bgm" controls></audio>
+    <!-- <div id="logo">
         <img id="logoImg" src="../commonFiles/image/Title.png">
-    </div>
+    </div> -->
+
+    <div id="mousePosition"></div>
+    <div id="mousePositionOverlay"></div>
 </body>
 
 
