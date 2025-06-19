@@ -24,7 +24,7 @@ window.onload = async () => {
 
     //     document.getElementById(`audioTimer`).innerHTML = ` / ${bgmDuration.minutes}:${bgmDuration.seconds}:${bgmDuration.milliseconds}`;
     // }
-    document.getElementById(`audioTimer`).innerHTML = `04:37:551`
+    document.getElementById(`audioTimer`).innerHTML = `04:16:551`
     if (location.href.includes(`battle1`)) {
         await loadScript(`scripts/battle1.js`);
     }

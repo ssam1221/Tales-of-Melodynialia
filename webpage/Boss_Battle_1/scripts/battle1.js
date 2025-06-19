@@ -34,6 +34,7 @@
     // Attack / Magic
     await (async () => {
         await battleInstance.addAttackEffect({
+            user: `Clef`,
             name: `Flame Slash`,
             type: `Normal`,
             target: `Single`,
@@ -42,6 +43,7 @@
             col: 5
         });
         await battleInstance.addAttackEffect({
+            user: `Clef`,
             name: `Sword Slash`,
             type: `Normal`,
             target: `Single`,
@@ -50,6 +52,7 @@
             col: 5
         });
         await battleInstance.addAttackEffect({
+            user: `Lirico`,
             name: `Cure`,
             description: [`Restore small amount of HP.`],
             type: `Magic`,
@@ -61,6 +64,7 @@
             col: 5
         });
         await battleInstance.addAttackEffect({
+            user: `Lirico`,
             name: `Fire Enchant`,
             description: [`Add fire element to next attack.`],
             type: `Magic`,
@@ -72,6 +76,7 @@
             col: 3
         });
         await battleInstance.addAttackEffect({
+            user: `Lirico`,
             name: `Firebolt`,
             description: [`Burns a target with high heat by friction of air.`],
             type: `Magic`,
@@ -83,6 +88,7 @@
             col: 8
         });
         await battleInstance.addAttackEffect({
+            user: `Lirico`,
             name: `Lightning Bolt`,
             description: [`Strikes a single target by generating current in the air.`],
             type: `Magic`,

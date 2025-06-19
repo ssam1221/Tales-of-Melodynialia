@@ -90,6 +90,20 @@ async function loadAudio(BGM_NAME) {
             bgm.volume = 1.0
             bgm.load();
             bgm.play();
+            bgm.oncanplaythrough = (() => {
+
+                const min = Math.floor(bgm.duration / 60)
+                const sec = Math.floor(bgm.duration % 60)
+                const ms = `${bgm.duration}`.split(`.`)[1].substring(0, 3)
+
+                document.getElementById(`audioTimer`).innerHTML =
+                    `${min}`.padStart(2, `0`)
+                    + `:`
+                    + `${sec}`.padStart(2, `0`)
+                    + `.`
+                    + `${(ms)}`;
+            });
+
             bgm.onplay = (() => {
                 gameplayTimer = setInterval(startTimer, 10);
                 resolve();
