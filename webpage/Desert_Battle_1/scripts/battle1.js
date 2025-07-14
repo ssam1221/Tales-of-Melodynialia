@@ -65,7 +65,7 @@
             element: `Heal`,
             target: `Single`,
             image: `sprites/attack/fire_enchant_001.png`,
-            mana: 25,
+            mana: 32,
             row: 7,
             col: 3
         });
@@ -77,7 +77,7 @@
             element: `Fire`,
             target: `Single`,
             image: `sprites/attack/fireball_explode.png`,
-            mana: 7,
+            mana: 12,
             row: 5,
             col: 8
         });
@@ -89,7 +89,7 @@
             element: `Thunder`,
             target: `Single`,
             image: `sprites/attack/Sprite_FX_Lightning_0009.png`,
-            mana: 10,
+            mana: 18,
             row: 1,
             col: 7,
             renderStartPosition: {
@@ -123,7 +123,7 @@
             type: `Magic`,
             target: `Single`,
             image: `sprites/attack/Presto Shot.png`,
-            mana: 12,
+            mana: 17,
             row: 8,
             col: 5,
             renderStartPosition: {
@@ -158,38 +158,38 @@
         });
 
         await battleInstance.addEnemy({
-            name: `Quaverock`,
+            name: `Quaverpion`,
             description: [
-                `A moving rock that quaver shape.`,
-                `It prefer a silent place such as deep cave.`
+                `A scorpion that tail shape is quaver.`,
+                `The venom of the tail is very deadly.`
             ],
             speed: 55,
             icon: `sprites/enemy1.png`,
-            HP: 309,
+            HP: 213,
             EXP: 112,
             gold: 87,
         });
         await battleInstance.addEnemy({
-            name: `Dancing Bat`,
+            name: `Fortisserpens`,
             description: [
-                `Flying dancing in the cave.`,
-                `Hunt prey by dancing skill.`
+                `Twin snakes with venomous fangs.`,
+                `Always standing in the shape of a fortissimo`
             ],
             speed: 96,
             icon: `sprites/enemy2.png`,
-            HP: 141,
+            HP: 171,
             EXP: 102,
             gold: 76,
         });
         await battleInstance.addEnemy({
-            name: `Float Quaverock`,
+            name: `Fermatadon`,
             description: [
-                `A floating rock that quaver shape.`,
+                `A sandstone golem with fermata pattern.`,
                 `Usually sleeping, but sensitive to sound.`
             ],
             speed: 50,
             icon: `sprites/enemy3.png`,
-            HP: 214,
+            HP: 266,
             EXP: 135,
             gold: 94,
         });
@@ -212,13 +212,13 @@
             battleInstance.addTurn();
 
 
-            // battleInstance.addBattleScenario({
-            //     action: `Magic_Buff`,
-            //     spell: `Fire Enchant`,
-            //     from: `Lirico`,
-            //     to: `Clef`,
-            //     comments: `The power of flame is dwelling into Clef's sword!`
-            // });
+            battleInstance.addBattleScenario({
+                action: `Magic_Buff`,
+                spell: `Fire Enchant`,
+                from: `Lirico`,
+                to: `Clef`,
+                comments: `The power of flame is dwelling into Clef's sword!`
+            });
 
             battleInstance.addBattleScenario({
                 action: `Magic_Buff_All`,
@@ -227,22 +227,22 @@
                 to: `All`,
                 value: 10,
                 comments: [
-                    `Trill sing a song! Increase all party's attack point `,
-                    `by 10%.`
+                    `Trill is singing a powerful song!`,
+                    `Increase all party's attack point by 10%.`
                 ]
             });
 
             battleInstance.addBattleScenario({
                 action: `Attack`,
-                attackName: `Sword Slash`,
+                attackName: `Flame Slash`,
                 from: `Clef`,
                 to: 0,
-                damage: 39
+                damage: 53
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Tackle`,
+                attackName: `Double Attack`,
                 from: 1,
                 to: `Clef`,
                 damage: 23
@@ -250,15 +250,15 @@
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Quick Attack`,
+                attackName: `Tail Scythe`,
                 from: 0,
                 to: `Trill`,
-                damage: 21
+                damage: 37
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Double attack`,
+                attackName: `Throw Stone`,
                 from: 2,
                 to: `Trill`,
                 damage: 34
@@ -280,10 +280,10 @@
 
             battleInstance.addBattleScenario({
                 action: `Attack`,
-                attackName: `Sword Slash`,
+                attackName: `Flame Slash`,
                 from: `Clef`,
                 to: 1,
-                damage: 6
+                damage: 43
             });
 
             battleInstance.addBattleScenario({
@@ -291,30 +291,64 @@
                 spell: `Lightning Bolt`,
                 from: `Lirico`,
                 to: 1,
-                damage: 12
+                damage: 61
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Tackle`,
+                attackName: `Tail Scythe`,
                 from: 0,
                 to: `Clef`,
-                damage: 5
+                damage: 64,
+                critical: true
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Quick Attack`,
+                attackName: `Double Poison Fang`,
                 from: 1,
-                to: `Clef`,
-                damage: 4
+                to: `Trill`,
+                damage: 17
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Double attack`,
+                attackName: `Double Poison Fang`,
+                from: 1,
+                to: `Trill`,
+                damage: 16
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Debuff`,
+                status: `Poison`,
+                to: `Trill`,
+                comments: [
+                    `Trill is poisoning by Fortisserpens's fang!`
+                ]
+            });
+
+            battleInstance.addBattleScenario({
+                action: `MonsterAttack`,
+                attackName: `Earthquake`,
+                from: 2,
+                to: `Clef`,
+                damage: 17
+            });
+
+            battleInstance.addBattleScenario({
+                action: `MonsterAttack`,
+                attackName: `Earthquake`,
                 from: 2,
                 to: `Lirico`,
+                damage: 23
+            });
+
+            battleInstance.addBattleScenario({
+                action: `MonsterAttack`,
+                attackName: `Earthquake`,
+                from: 2,
+                to: `Trill`,
                 damage: 0
             });
         })();
@@ -324,42 +358,61 @@
             battleInstance.addTurn();
 
             battleInstance.addBattleScenario({
+                action: `MonsterAttack`,
+                attackName: `Poison`,
+                from: 1,
+                to: `Trill`,
+                damage: 11
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Magic`,
+                spell: `Presto Shot`,
+                from: `Trill`,
+                to: 0,
+                hitCount: 2,
+                damage: 43
+            });
+
+            battleInstance.addBattleScenario({
                 action: `Attack`,
                 attackName: `Sword Slash`,
                 from: `Clef`,
-                to: 2,
-                damage: 0
+                to: 1,
+                damage: 1
             });
+            // Enemy 2 fainted
 
             battleInstance.addBattleScenario({
                 action: `Magic`,
                 spell: `Lightning Bolt`,
                 from: `Lirico`,
                 to: 0,
-                damage: 12
+                damage: 77,
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Tackle`,
+                attackName: `Rapid Poison Tail`,
                 from: 0,
                 to: `Clef`,
-                damage: 5
+                damage: 23
             });
 
             battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 1,
+                action: `Debuff`,
+                status: `Poison`,
                 to: `Clef`,
-                damage: 0
+                comments: [
+                    `Clef is poisoning by Quaverpion's tail!`
+                ]
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
                 attackName: `Double attack`,
                 from: 2,
-                to: `Clef`,
+                to: `Trill`,
                 damage: 7
             });
         })();
@@ -369,43 +422,54 @@
             battleInstance.addTurn();
 
             battleInstance.addBattleScenario({
-                action: `Attack`,
-                attackName: `Sword Slash`,
-                from: `Clef`,
-                to: 1,
-                damage: 8
-            });
-
-            battleInstance.addBattleScenario({
-                action: `Magic`,
-                spell: `Firebolt`,
-                from: `Lirico`,
-                to: 0,
+                action: `MonsterAttack`,
+                attackName: `Poison`,
+                from: 0,
+                to: `Clef`,
                 damage: 12
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 0,
-                to: `Clef`,
-                damage: 6
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
+                attackName: `Poison`,
                 from: 1,
-                to: `Clef`,
-                damage: 0
+                to: `Trill`,
+                damage: 11
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Magic`,
+                spell: `Presto Shot`,
+                from: `Trill`,
+                to: 0,
+                hitCount: 2,
+                damage: 35
+            });
+            // Enemy 0 fainted
+
+            battleInstance.addBattleScenario({
+                action: `Attack`,
+                attackName: `Sword Slash`,
+                from: `Clef`,
+                to: 2,
+                damage: 33
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Magic`,
+                spell: `Lightning Bolt`,
+                from: `Lirico`,
+                to: 2,
+                damage: 64,
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Double attack`,
+                attackName: `Throw Rock`,
                 from: 2,
-                to: `Clef`,
-                damage: 7
+                to: `Lirico`,
+                damage: 92,
+                critical: true
             });
         })();
 
@@ -414,219 +478,49 @@
             battleInstance.addTurn();
 
             battleInstance.addBattleScenario({
-                action: `Attack`,
-                attackName: `Sword Slash`,
-                from: `Clef`,
-                to: 2,
-                damage: 16
-            });
-
-            battleInstance.addBattleScenario({
-                action: `Magic`,
-                spell: `Firebolt`,
-                from: `Lirico`,
-                to: 2,
-                damage: 10
-            });
-
-            battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Tackle`,
+                attackName: `Poison`,
                 from: 0,
-                to: `Lirico`,
-                damage: 6
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 1,
                 to: `Clef`,
-                damage: 0
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Double attack`,
-                from: 2,
-                to: `Clef`,
-                damage: 8
-            });
-        })();
-
-        // Turn 6
-        (() => {
-            battleInstance.addTurn();
-
-            battleInstance.addBattleScenario({
-                action: `Attack`,
-                attackName: `Sword Slash`,
-                from: `Clef`,
-                to: 2,
-                damage: 8
-            });
-
-            battleInstance.addBattleScenario({
-                action: `Magic`,
-                spell: `Firebolt`,
-                from: `Lirico`,
-                to: 2,
                 damage: 12
             });
 
             battleInstance.addBattleScenario({
                 action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 0,
-                to: `Lirico`,
-                damage: 7
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
+                attackName: `Poison`,
                 from: 1,
-                to: `Clef`,
-                damage: 0
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Double attack`,
-                from: 2,
-                to: `Clef`,
-                damage: 7
-            });
-        })();
-
-        // Turn 7
-        (() => {
-            battleInstance.addTurn();
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 0,
-                to: `Lirico`,
-                damage: 0
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 1,
-                to: `Clef`,
-                damage: 6
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Double attack`,
-                from: 2,
-                to: `Clef`,
-                damage: 7
-            });
-        })();
-
-        // Turn 8
-        (() => {
-            battleInstance.addTurn();
-
-            battleInstance.addBattleScenario({
-                action: `Attack`,
-                attackName: `Sword Slash`,
-                from: `Clef`,
-                to: 2,
-                damage: 9
-            });
-
-            battleInstance.addBattleScenario({
-                action: `Magic`,
-                spell: `Lightning Bolt`,
-                from: `Lirico`,
-                to: 2,
-                damage: 15
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 0,
-                to: `Lirico`,
-                damage: 0
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 1,
-                to: `Clef`,
-                damage: 6
-            });
-        })();
-
-        // Turn 8
-        (() => {
-            battleInstance.addTurn();
-
-            battleInstance.addBattleScenario({
-                action: `Attack`,
-                attackName: `Sword Slash`,
-                from: `Clef`,
-                to: 1,
-                damage: 8
-            });
-
-            battleInstance.addBattleScenario({
-                action: `Magic`,
-                spell: `Lightning Bolt`,
-                from: `Lirico`,
-                to: 1,
-                damage: 14
-            });
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 0,
-                to: `Lirico`,
-                damage: 7
-            });
-        })();
-
-        // Turn 9
-        (() => {
-            battleInstance.addTurn();
-
-            battleInstance.addBattleScenario({
-                action: `MonsterAttack`,
-                attackName: `Tackle`,
-                from: 0,
-                to: `Lirico`,
-                damage: 7
-            });
-        })();
-
-        // Turn 10
-        (() => {
-            battleInstance.addTurn();
-
-            battleInstance.addBattleScenario({
-                action: `Attack`,
-                attackName: `Sword Slash`,
-                from: `Clef`,
-                to: 0,
+                to: `Trill`,
                 damage: 11
             });
 
             battleInstance.addBattleScenario({
                 action: `Magic`,
-                spell: `Firebolt`,
+                spell: `Presto Shot`,
+                from: `Trill`,
+                to: 2,
+                hitCount: 3,
+                damage: 103,
+                critical: true
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Attack`,
+                attackName: `Sword Slash`,
+                from: `Clef`,
+                to: 2,
+                damage: 34,
+            });
+
+            battleInstance.addBattleScenario({
+                action: `Magic`,
+                spell: `Lightning Bolt`,
                 from: `Lirico`,
-                to: 0,
-                damage: 13
+                to: 2,
+                damage: 68,
+                critical: true
             });
         })();
+
     })();
 
     setTimeout(async () => {

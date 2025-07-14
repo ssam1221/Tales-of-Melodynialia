@@ -304,6 +304,7 @@ class Battle {
                         setTimeout(() => {
                             enemy.remainHP = enemy.remainHP - decreaseHPPerFrame
                             if (enemy.remainHP <= 0) {
+                                enemy.remainHP = 0;
                                 remainHPDiff = 0;
                                 enemy.status = `Deading`;
                             }
@@ -463,7 +464,7 @@ class Battle {
     }
 
     renderSelectMagicInUI() {
-        console.log(`currentAttackName `, this.currentActiveCharacter)
+        // console.log(`currentAttackName `, this.currentActiveCharacter)
 
         this.ctx.fillStyle = `#FFFFFF`
         this.ctx.textAlign = `start`;
@@ -870,6 +871,7 @@ class Battle {
                         (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
                         this.UIContainer.top + 30,
                         64, 64);
+                    this.addPlayerStatusEffect({ idx, character });
                 }
                 // Player fainted
                 else {
@@ -880,8 +882,7 @@ class Battle {
                         64, 64);
                 }
                 this.ctx.filter = `none`;
-
-
+                this.ctx.fillStyle = `#FFFFFF`
                 this.ctx.font = `10px Arial`;
                 const hpmpText = {
                     HP: `${character.remainHP} / ${character.HP}`,
@@ -1156,6 +1157,19 @@ class Battle {
         // console.log(JSON.stringify(this.Characters, null, 4));
     }
 
+    addPlayerStatusEffect({ idx, character }) {
+        // Player status
+        this.ctx.globalCompositeOperation = 'source-atop';
+        if (character.status === `Poison`) {
+            this.ctx.fillStyle = 'rgba(107, 0, 75, 0.5)';
+            this.ctx.fillRect(
+                (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
+                this.UIContainer.top + 30,
+                64, 64);
+        }
+        this.ctx.globalCompositeOperation = 'source-over';
+    }
+
     async renderPlayerCharacterInUI() {
         if (this.UIMode === UI_MODE.BATTLE_MENU) {
             for (let idx = 0; idx < this.PlayerList.length; idx++) {
@@ -1269,6 +1283,7 @@ class Battle {
                             (this.UIContainer.left + 25) + (((this.UIContainer.width * 0.15) + 10) * idx),
                             this.UIContainer.top + 30,
                             64, 64);
+                        this.addPlayerStatusEffect({ idx, character });
                     }
                     // Player fainted
                     else {
@@ -1279,7 +1294,7 @@ class Battle {
                             64, 64);
                     }
                     this.ctx.filter = `none`;
-
+                    this.ctx.fillStyle = `#FFFFFF`
                     this.ctx.font = `10px Arial`;
                     const hpmpText = {
                         HP: `${character.remainHP} / ${character.HP}`,
@@ -1773,6 +1788,12 @@ class Battle {
         await sleep(1500);
     }
 
+    async debuffCharacter(scenario) {
+        this.renderingTextInUI = scenario.comments;
+        this.findPlayerInfoByName(scenario.to).status = scenario.status;
+        await sleep(1500);
+    }
+
     addTurn() {
         this.battleScenario.push({
             scenario: `addTurn`
@@ -1860,6 +1881,13 @@ class Battle {
                     case `MonsterAttack`: {
                         this.UIMode = UI_MODE.ATTACK_BY_ENEMY;
                         await this.attackedByEnemy(scenario);
+                        this.UIMode = UI_MODE.BATTLE_MENU;
+                        break;
+                    }
+
+                    case `Debuff`: {
+                        this.UIMode = UI_MODE.ATTACK_BY_ENEMY;
+                        await this.debuffCharacter(scenario);
                         this.UIMode = UI_MODE.BATTLE_MENU;
                         break;
                     }
